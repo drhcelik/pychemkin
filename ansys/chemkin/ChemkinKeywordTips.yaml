@@ -1,0 +1,198 @@
+---
+# Solver:
+ATOL:
+    Description: 'absolute tolerance'
+    DefaultValue: '1.0E-12'
+    Units: 'none'
+RTOL:
+    Description: 'relative tolerance'
+    DefaultValue: '1.0E-6'
+    Units: 'none'
+NNEG:
+    Description: 'enforce non-negative solution values (transient solver)'
+    DefaultValue: 'no parameter'
+    Units: 'none'
+STPT:
+    Description: 'maximum solver time step size (transient solver)'
+    DefaultValue: '100th of the simulation time'
+    Units: 'sec'
+HO:
+    Description: 'starting time step size used by the solver (transient solver)'
+    DefaultValue: 'determined by the solver'
+    Units: 'sec'
+USE_LEGACY_TECHNIQUE:
+    Description: 'switch to chemkin 4.x solution technique when facing converge issues'
+    DefaultValue: '4.x'
+    Units: 'none'
+ATLS:
+    Description: 'absolute tolerance for the sensitivity coefficents'
+    DefaultValue: '1.0E-6'
+    Units: 'none'
+RTLS:
+    Description: 'relative tolerance for the sensitivity coefficients'
+    DefaultValue: '1.0E-4'
+    Units: 'none'
+ISTP:
+    Description: 'specify the number of initial pseudo time steps taken by the steady-state solver before attempting a Newton iteration'
+    DefaultValue: '0'
+    Units: 'none'
+MAXIT:
+    Description: 'maximum number of iterations per step (1-4) (transient solver)'
+    DefaultValue: '4'
+    Units: 'none'
+MAXTIME:
+    Description: 'maximum number of pseudo time stepping tries'
+    DefaultValue: '100'
+    Units: 'none'
+MORD:
+    Description: 'miximum order of integration (1-5) (transient solver)'
+    DefaultValue: '5'
+    Units: 'none'
+PRNT:
+    Description: 'print level (0-2) for the steady-state solver text outputs'
+    DefaultValue: '0 to print solution only'
+    Units: 'none'
+# Output:
+DTSV:
+    Description: 'time interval between saving solution data (transient solver)'
+    Default Value: '100th of the simulation time'
+    Units: 'sec'
+DELT:
+    Description: 'time interval between printing solution data (transient solver)'
+    Default Value: '100th of the simulation time'
+    Units: 'sec'
+ADAP:
+    Description: 'save additional adaptive solution data points (transient solver)'
+    Default: "no parameter; use 'ASTEPS' or 'AVAR'-'AVALUE' to set frequency"
+    Units: 'none'
+ASTEPS:
+    Description: 'insert additional adaptive solution data point every n integration time steps'
+    DefaultValue: '20'
+    Units: 'none'
+AVAR:
+    Description: 'insert additional adaptive solution data point based on a solution variable'
+    DefaultValue: 'none'
+    Units: 'none'
+AVALUE:
+    Description: "insert additional adaptive solution data point when change in value of the variable specified by 'AVAR' is at least x"
+    DefaultValue: 'none'
+    Units: 'none'
+NADAP:
+    Description: 'do not save adaptive solution points (transient solver)'
+    DefaultValue: 'no parameter'
+    Units: 'none'
+PRINT:
+    Description: 'level of diagnostic information sent to the output file'
+    DefaultValue: '1'
+    Units: 'none'
+# Sensitivity:
+ASEN:
+    Description: 'calculate the first-order, A-factor sensitivity coefficients for all solution variables'
+    DefaultValue: 'no parameter (report SEN for all solution variables)'
+    Units: 'none'
+EPSS:
+    Description: 'threshold value for reporting the A-factor sensitivity coefficients for the species'
+    DefaultValue: '0.001'
+    Units: 'none'
+EPST:
+    Description: 'threshold value for reporting the A-factor sensitivity coefficients for the gas temperature'
+    DefaultValue: '0.001'
+    Units: 'none'
+# Rate of production
+AROP:
+    Description: 'report species rates of production (ROP) coefficients'
+    DefaultValue: 'no parameter (report ROP for all species)'
+    Units: 'none'
+EPSR:
+    Description: 'threshold value for reporting the rate of production (ROP) coefficients'
+    DefaultValue: '0.01'
+    Units: 'none'
+# Reactor:
+TIME:
+    Description: 'ending time of the simulation (batch reactor)'
+    DefaultValue: '0.0'
+    Units: 'sec'
+VOL:
+    Description: 'reactor volume'
+    DefaultValue: 'none'
+    Units: 'cm3'
+AREA:
+    Description: 'reactor internal reactive surface area for surface chemistry'
+    DefaultValue: '0.0'
+    Units: 'cm2'
+TSRF:
+    Description: 'reactor surface temperature for surface chemistry'
+    DefaultValue: 'same as the gas temperature'
+    Units: 'K'
+GFAC:
+    Description: 'gas reaction rate multiplier'
+    DefaultValue: '1.0'
+    Units: 'none'
+SFAC:
+    Description: 'surface reaction rate multiplier'
+    DefaultValue: '1.0'
+    Units: 'none'
+# HeatTransfer:
+QLOS:
+    Description: 'rate of heat loss to the surroundings'
+    DefaultValue: '0.0'
+    Units: 'cal/sec'
+HTC:
+    Description: 'overall wall heat transfer coeffiicent to the surroundings'
+    DefaultValue: '0.0'
+    Units: 'cal/cm2-K-sec'
+AREAQ:
+    Description: 'reactor external heat transfer surface area'
+    DefaultValue: '0.0'
+    Units: 'cm2'
+TAMB:
+    Description: 'ambient temperature'
+    DefaultValue: '300.0'
+    Units: 'K'
+# Inlet:
+FLRT:
+    Description: 'inlet mass flow rate (or flux for the premixed flame calculation)'
+    DefaultValue: '0.0'
+    Units: 'g/sec (or g/cm2-sec for premixed flame)'
+# IC engine
+LODR:
+    Description: 'ratio of the piston pin offset to the crank radius'
+    DefaultValue: '0.0 (no pin offset)'
+    Units: 'none'
+LOLR:
+    Description: 'ratio of the connecting rod length to the crank radius'
+    DefaultValue: '33.3'
+    Units: 'none'
+NCANG:
+    Description: 'specify the duration of the IC engine simulation in crank angles'
+    DefaultValue: '180.0'
+    Units: 'degree CA'
+NREV:
+    Description: 'specify the duration of the IC engine simulation in number of revolutions'
+    DefaultValue: '0.0'
+    Units: 'none'
+MZMAS:
+    Description: 'specify zonal mass fraction of the multi-zone HCCI engine model'
+    DefaultValue: 'same mass in all zones'
+    Units: 'none, <zone #>'
+PRDL:
+    Description: 'the Prandlt number used by the wall heat transfer correlations of the IC engine models'
+    DefaultValue: '0.7'
+    Units: 'none'
+ICHX:
+    Description: 'use generalized convective heat transfer correlation to compute cylinder wall heat transfer coefficient'
+    DefaultValue: 'a = 1.0, b = 0.0, c = 0.0, Tamb = 300.0'
+    Units: 'none, none, none, K'
+ICHW:
+    Description: 'use dimensional Woschni formulation to compute cylinder wall heat transfer coefficient'
+    DefaultValue: 'a = 1.0, b = 0.0, c = 0.0, Tamb = 300.0'
+    Units: 'none, none, none, K'
+# real-gas EOS
+RLGAS:
+    Description: 'activate the real-gas cubic EOS in the real-gas mixture property calculations'
+    DefaultValue: 'no parameter'
+    Units: 'none'
+RLMIX:
+    Description: 'select the mixing rule in the real-gas mixture property calculations'
+    DefaultValue: '0: the Van der Waals method; 1: the pseudo-critical property method'
+    Units: 'none'
