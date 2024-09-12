@@ -77,12 +77,6 @@ jobs:
       ports:
         - 80
         - 1055
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [windows-latest]
-        python-version: ['3.9', '3.10', '3.11', '3.12']
-
       - name: Run pytest
         uses: ansys/actions/tests-pytest@v4
         env:
