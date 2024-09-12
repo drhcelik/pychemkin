@@ -24,6 +24,7 @@ if platform.system() == "Windows":
         if v >= _min_version:
             _ansys_installation = "ANSYS" + str(_ansys_ver) + "_DIR"
             _ansys_home = os.environ.get(_ansys_installation, "NA")
+            print(_ansys_installation + ": " + _ansys_home)
             if _ansys_home != "NA":
                 _ansys_dir = os.path.dirname(_ansys_home)
                 break
@@ -36,6 +37,12 @@ else:
 
 if _ansys_ver >= _min_version:
     if not os.path.isdir(_ansys_dir):
+        pf = r"C:\Program Files"
+        files = os.listdir(pf)
+        msg = "Contents of Program Files: "
+        for f in files:
+            msg += str(f) + " "
+        print(msg)
         print(f"** PyChemkin cannot find the specific Ansys installation: {_ansys_dir}")
         exit()
     else:
