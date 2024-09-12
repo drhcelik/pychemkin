@@ -40,6 +40,9 @@ pyyaml = ">=6.0"
 pytest = "*"
 pytest-cov = "*"
 
+[tool.poetry.group.tests]
+optional = true
+
 [doc.poetry.dependencies]
 nbsphinx= ">=0.9.3"
 notebook= ">=7.0.5"
