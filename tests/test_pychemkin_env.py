@@ -1,6 +1,8 @@
-def func(x):
-    return x + 1
+import os
+import chemkin as ck
 
+def check_install():
+    return os.path.isdir(ck.ansys_dir)
 
 def test_answer():
-    assert func(3) == 5
+    assert check_install()
