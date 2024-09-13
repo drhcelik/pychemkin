@@ -45,7 +45,7 @@ jobs:
   tests:
     name: "Test ${{ matrix.python-version }} with ${{ matrix.os }}"
     needs: [smoke-tests]
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     container:
       image: ghcr.io/ansys/chemkin
       credentials:
