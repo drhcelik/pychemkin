@@ -1,4 +1,4 @@
-name: Github CI
+name: Container Test
 
 on:
   workflow_dispatch:
