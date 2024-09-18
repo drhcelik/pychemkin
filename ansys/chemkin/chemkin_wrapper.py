@@ -48,13 +48,23 @@ if _ansys_ver >= _min_version:
             _lib_paths = [
                 os.path.join(_ansys_dir, "tp", "IntelCompiler", "2023.1.0", "win64"),
                 os.path.join(_ansys_dir, "tp", "IntelMKL", "2023.1.0", "win64"),
-                os.path.join(_ansys_dir, "tp", "zlib", "1.2.13", "win64")
+                os.path.join(_ansys_dir, "tp", "zlib", "1.2.13", "win64"),
             ]
         else:
             _lib_paths = [
-                os.path.join(_ansys_dir, "tp", "IntelCompiler", "2023.1.0", "linx64", "lib", "intel64"),
-                os.path.join(_ansys_dir, "tp", "IntelMKL", "2023.1.0", "linx64", "lib", "intel64"),
-                os.path.join(_ansys_dir, "tp", "zlib", "1.2.13", "linx64", "lib")
+                os.path.join(
+                    _ansys_dir,
+                    "tp",
+                    "IntelCompiler",
+                    "2023.1.0",
+                    "linx64",
+                    "lib",
+                    "intel64",
+                ),
+                os.path.join(
+                    _ansys_dir, "tp", "IntelMKL", "2023.1.0", "linx64", "lib", "intel64"
+                ),
+                os.path.join(_ansys_dir, "tp", "zlib", "1.2.13", "linx64", "lib"),
             ]
 else:
     print("** PyChemkin does not support Chemkin versions older than 2025R1")
@@ -66,7 +76,7 @@ if sys.platform == "win32":
 else:
     combined_path = ":".join(_lib_paths)
     if "LD_LIBRARY_PATH" not in os.environ.keys():
-    #if os.environ["LD_LIBRARY_PATH"] is None:
+        # if os.environ["LD_LIBRARY_PATH"] is None:
         os.environ["LD_LIBRARY_PATH"] = combined_path
     else:
         os.environ["LD_LIBRARY_PATH"] = (
@@ -81,9 +91,13 @@ else:
 try:
     target_path = None
     if sys.platform == "win32":
-        target_lib = os.path.join(_ansys_dir, "reaction", "chemkin.win64", "bin", "KINeticsdll.dll")
+        target_lib = os.path.join(
+            _ansys_dir, "reaction", "chemkin.win64", "bin", "KINeticsdll.dll"
+        )
     else:
-        target_lib = os.path.join(_ansys_dir, "reaction", "chemkin.linuxx8664", "bin", "libKINetics.so")
+        target_lib = os.path.join(
+            _ansys_dir, "reaction", "chemkin.linuxx8664", "bin", "libKINetics.so"
+        )
     chemkin = cdll.LoadLibrary(target_lib)
 except OSError:
     inst_dir = os.path.join(_ansys_dir, "reaction", "chemkin.win64", "bin")

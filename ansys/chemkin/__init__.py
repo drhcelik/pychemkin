@@ -7,9 +7,9 @@ core
 from ctypes import c_int
 import inspect
 import os
+import platform
 
 import yaml
-import platform
 
 # import kinetics
 from . import chemkin_wrapper as ck_wrapper

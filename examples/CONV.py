@@ -1,5 +1,5 @@
-import sys
 import os
+import sys
 
 import matplotlib.pyplot as plt  # plotting
 import numpy as np  # number crunching
