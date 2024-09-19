@@ -89,12 +89,6 @@ jobs:
   doc:
     name: "Doc build"
     runs-on: ubuntu-latest
-    container:
-      image: ghcr.io/ansys/chemkin
-      credentials:
-        username: ${{ github.repository_owner }}
-        password: ${{ secrets.GITHUB_TOKEN }}
-      options: --cpus 1 --user root
     needs: doc-style
     steps:
       - uses: actions/checkout@v4
