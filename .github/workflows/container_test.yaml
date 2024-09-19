@@ -14,7 +14,6 @@ env:
   MAIN_PYTHON_VERSION: '3.10'
   PACKAGE_NAME: 'ansys-chemkin'
   PACKAGE_NAMESPACE: 'ansys.chemkin'
-  ANSYS251_DIR: 'C:\Program Files\ANSYS Inc\v251\'
   CHEMKIN_IMAGE: 'ghcr.io/ansys/chemkin'
   POETRY_VIRTUALENVS_CREATE: 'false'
 
@@ -52,10 +51,6 @@ jobs:
       credentials:
         username: ${{ github.repository_owner }}
         password: ${{ secrets.GITHUB_TOKEN }}
-      env:
-        ANSYS251_DIR: 'C:\Program Files\ANSYS Inc\v251\'
-      ports:
-        - 80
       options: --cpus 1
     steps:
       - name: Run pytest
@@ -63,7 +58,6 @@ jobs:
         env:
           ANSYSLMD_LICENSE_FILE: ${{ format('1055@{0}', secrets.LICENSE_SERVER) }}
           POETRY_VIRTUALENVS_CREATE: 'false'
-          ANSYS251_DIR: 'C:\Program Files\ANSYS Inc\v251\'
         with:
           python-version: 3.10
           requires-xvfb: false
