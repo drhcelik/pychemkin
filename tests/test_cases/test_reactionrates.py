@@ -63,7 +63,7 @@ def test_reactionrates():
     premixed.temperature = 1600.0
     # get the net species molar rates of production [mole/cm3-sec]
     rop = premixed.ROP()
-    print("ROP count: " + len(rop))
+    print("ROP count: " + str(len(rop)))
     # list the nonzero rates in descending order
     print()
     specrate_order, species_rates = premixed.listROP()
