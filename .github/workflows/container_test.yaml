@@ -61,7 +61,7 @@ jobs:
         with:
           python-version: "3.11"
           requires-xvfb: false
-          cache: 'pip3'
+          use-python-cache: false
 
       - uses: codecov/codecov-action@v3
         name: 'Upload coverage to CodeCov'
