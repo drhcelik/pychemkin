@@ -60,7 +60,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
   tests:
-    name: "Test ${{ matrix.python-version }} with ${{ matrix.os }}"
+    name: "Test ${{ matrix.python-version }} with ubuntu"
     needs: [smoke-tests]
     runs-on: ubuntu-latest
     container:
