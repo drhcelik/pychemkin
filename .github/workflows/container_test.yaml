@@ -53,7 +53,7 @@ jobs:
       credentials:
         username: ${{ github.repository_owner }}
         password: ${{ secrets.GITHUB_TOKEN }}
-      options: --cpus 1 --user runner
+      options: --cpus 1 --user root
     steps:
       - name: Run pytest
         uses: ansys/actions/tests-pytest@v4
