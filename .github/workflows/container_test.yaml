@@ -11,7 +11,7 @@ on:
 
 env:
   DOCUMENTATION_CNAME: 'chemkin.docs.pyansys.com'
-  MAIN_PYTHON_VERSION: '3.10'
+  MAIN_PYTHON_VERSION: '3.11'
   PACKAGE_NAME: 'ansys-chemkin'
   PACKAGE_NAMESPACE: 'ansys.chemkin'
   CHEMKIN_IMAGE: 'ghcr.io/ansys/chemkin'
@@ -30,7 +30,7 @@ jobs:
       matrix:
         os: [windows-latest]
 #        python-version: ['3.9', '3.10', '3.11', '3.12']
-        python-version: ['3.10']
+        python-version: ['3.11']
         should-release:
           - ${{ github.event_name == 'push' && contains(github.ref, 'refs/tags') }}
     steps:
@@ -59,7 +59,7 @@ jobs:
           ANSYSLMD_LICENSE_FILE: ${{ format('1055@{0}', secrets.LICENSE_SERVER) }}
           POETRY_VIRTUALENVS_CREATE: 'false'
         with:
-          python-version: "3.10"
+          python-version: "3.11"
           requires-xvfb: false
 
       - uses: codecov/codecov-action@v3
