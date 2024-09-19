@@ -159,7 +159,7 @@ def test_CONV():
         # get CH4 mole fraction profile
         CH4profile[i] = solutionmixture.X[CH4_index]
         # get CH4 ROP profile
-        # currentROP = solutionmixture.ROP()
+        currentROP = solutionmixture.ROP()
         CH4ROPprofile[i] = currentROP[CH4_index]
         # get mixture vicosity profile
         viscprofile[i] = solutionmixture.mixtureviscosity()
