@@ -48,9 +48,6 @@ optional = true
 
 [tool.poetry.group.doc.dependencies]
 sphinx-autoapi = "3.3.1"
-sphinx-design = "0.6.1"
-sphinx-jinja = "2.0.2"
-numpydoc = "1.5.0"
 ansys-sphinx-theme = ">=1.0.3"
 matplotlib = ">=3.6.0"
 jupytext = "1.16.4"
@@ -60,7 +57,7 @@ numpydoc = "1.8.0"
 pandas = "2.2.2"
 Pillow = ">=9.0"
 PyGitHub = "2.4.0"
-pyvista[jupyter] = "0.44.1"
+pyvista = "0.44.1"
 requests = "2.32.3"
 sphinx-autoapi = "3.3.1"
 sphinx-copybutton = "0.5.2"
