@@ -65,9 +65,9 @@ MyCONP.temperature = 950.0  # K
 MyCONP.listcomposition(mode="mole")
 # set other reactor parameters
 # reactor volume [cm3]
-MyCONP.volume = 10.0 
+MyCONP.volume = 10.0
 # simulation end time [sec]
-MyCONP.time = 1.0  
+MyCONP.time = 1.0
 # output controls
 # set timestep between saving solution
 MyCONP.timestepforsavingsolution = 0.001
@@ -122,10 +122,12 @@ runtime = time.time() - start_time
 print(f"total simulation duration: {runtime} [sec] for {npoints} cases")
 # create an ignition delay versus 1/T plot for the PRF fuel (should exhibit the NTC region)
 plt.rcParams.update({"figure.autolayout": True})
-fig, ax1 =plt.subplots()
-ax1.semilogy(temp_inv,delaytime,"bs--")
+fig, ax1 = plt.subplots()
+ax1.semilogy(temp_inv, delaytime, "bs--")
 ax1.set_xlabel("1/T [1/K]")
 ax1.set_ylabel("Ignition delay time [msec]")
+
+
 # Create a secondary x-axis for T (=1/(1/T))
 def one_over(x):
     """Vectorized 1/x, treating x==0 manually"""
@@ -134,6 +136,8 @@ def one_over(x):
     x[near_zero] = np.inf
     x[~near_zero] = 1 / x[~near_zero]
     return x
+
+
 # the function "1/x" is its own inverse
 inverse = one_over
 ax2 = ax1.secondary_xaxis("top", functions=(one_over, inverse))
