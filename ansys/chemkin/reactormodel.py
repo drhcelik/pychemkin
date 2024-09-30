@@ -6,7 +6,7 @@ import logging
 import numpy as np
 
 from . import chemkin_wrapper
-from .chemistry import verbose
+from .chemistry import checkchemistryset, chemistrysetinitialized, verbose
 from .color import Color
 from .mixture import Mixture
 
@@ -539,14 +539,17 @@ class ReactorModel:
         self._solution_mixturearray = []
         # initialize output buffer
         self.output = {}
-        self._CKinitialized = False
         # initialize KINetics
-        print(Color.YELLOW + "** initializing chemkin...", end="\n" + Color.END)
-        iErr = chemkin_wrapper.chemkin.KINInitialize(self._chemset_index, c_int(0))
-        if iErr == 0:
-            self._CKinitialized = True
-        else:
-            print(Color.RED + "** fail to initialize KINetics", end="\n" + Color.END)
+        if not checkchemistryset(self._chemset_index.value):
+            # need to initialize KINetics
+            print(Color.YELLOW + "** initializing chemkin...", end="\n" + Color.END)
+            iErr = chemkin_wrapper.chemkin.KINInitialize(self._chemset_index, c_int(0))
+            if iErr == 0:
+                chemistrysetinitialized(self._chemset_index.value)
+            else:
+                print(
+                    Color.RED + "** fail to initialize KINetics", end="\n" + Color.END
+                )
 
     def usefullkeywords(self, mode):
         """

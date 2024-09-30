@@ -5,7 +5,13 @@ import logging
 import numpy as np
 
 from .. import chemkin_wrapper
-from ..chemistry import findinterpolateparameters, showignitiondefinition
+from ..chemistry import (
+    checkchemistryset,
+    chemistrysetinitialized,
+    findinterpolateparameters,
+    setverbose,
+    showignitiondefinition,
+)
 from ..color import Color as Color
 from ..mixture import interpolatemixtures
 from ..reactormodel import Keyword
@@ -550,7 +556,7 @@ class BatchReactors(reactor):
         :return: Error code (integer scalar)
         """
         iErr = 0
-        # verbose = True
+        # setverbose(True)
         # verify required inputs
         iErr = self.inputvalidation()
         if iErr != 0:
@@ -640,7 +646,7 @@ class BatchReactors(reactor):
         iErrc = 0
         iErrKey = 0
         iErrInputs = 0
-        # verbose = True
+        setverbose(True)
         # verify required inputs
         iErr = self.inputvalidation()
         if iErr != 0:
@@ -738,8 +744,11 @@ class BatchReactors(reactor):
         print(
             Color.YELLOW + f"** running model {self.__class__.__name__} {self.label}..."
         )
-        print(f"   initialization = {self._CKinitialized}", end="\n" + Color.END)
-        if not self._CKinitialized:
+        print(
+            f"   initialization = {checkchemistryset(self._chemset_index.value)}",
+            end="\n" + Color.END,
+        )
+        if not checkchemistryset(self._chemset_index.value):
             # KINetics is not initialized: reinitialize KINetics
             print(Color.YELLOW + "** initializing chemkin...", end="\n" + Color.END)
             retVal = chemkin_wrapper.chemkin.KINInitialize(
@@ -753,7 +762,7 @@ class BatchReactors(reactor):
                 logger.debug(f"Initializing KINetics failed (code={retVal})")
                 return retVal
             else:
-                self._CKinitialized = True
+                chemistrysetinitialized(self._chemset_index.value)
 
         for kw in kwargs:
             logger.debug("Reactor model argument " + kw + " = " + str(kwargs[kw]))

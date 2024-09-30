@@ -8,7 +8,9 @@ from . import chemkin_wrapper as ck_wrapper
 from .chemistry import (
     Chemistry,
     calculatestoichiometrics,
+    checkchemistryset,
     checkrealgasstatus,
+    chemistrysetinitialized,
     setcurrentpressure,
     verbose,
     whereelementinarray1D,
@@ -433,6 +435,7 @@ def calculateequilibrium(
         pass
     else:
         eq_option = c_int(EQOption)
+
     # check real gas option
     if useRealGas is None:
         pass
@@ -451,22 +454,8 @@ def calculateequilibrium(
     tt_eq = c_double(t)
     detonationwavespeed = c_double(0.0e0)
     soundspeed_eq = c_double(0.0e0)
-    # perform gas-phase equilibrium calculation
-    try:
-        iErr = ck_wrapper.chemkin.KINCalculateEqGasWithOption(
-            _chemset_index,
-            eq_option,
-            iRealGas,
-            pp,
-            tt,
-            xx,
-            pp_eq,
-            tt_eq,
-            soundspeed_eq,
-            detonationwavespeed,
-            xx_eq,
-        )
-    except OSError:
+    # perform gas-phase equilibrium calculationk
+    if not checkchemistryset(_chemset_index.value):
         # need to initialize KINetics
         print(Color.YELLOW + "** initializing chemkin...", end="\n" + Color.END)
         iErr = ck_wrapper.chemkin.KINInitialize(_chemset_index, c_int(0))
@@ -474,19 +463,24 @@ def calculateequilibrium(
             print(Color.RED + "** fail to initialize KINetics", end="\n" + Color.END)
             statevars = [p, t, 0.0, 0.0]
             return statevars, frac
-        iErr = ck_wrapper.chemkin.KINCalculateEqGasWithOption(
-            _chemset_index,
-            eq_option,
-            iRealGas,
-            pp,
-            tt,
-            xx,
-            pp_eq,
-            tt_eq,
-            soundspeed_eq,
-            detonationwavespeed,
-            xx_eq,
-        )
+        else:
+            chemistrysetinitialized(_chemset_index.value)
+    else:
+        iErr = 0
+
+    iErr = ck_wrapper.chemkin.KINCalculateEqGasWithOption(
+        _chemset_index,
+        eq_option,
+        iRealGas,
+        pp,
+        tt,
+        xx,
+        pp_eq,
+        tt_eq,
+        soundspeed_eq,
+        detonationwavespeed,
+        xx_eq,
+    )
 
     if iErr == 0:
         # process solution
@@ -549,7 +543,7 @@ def equilibrium(mixture, opt=None):
     if not isinstance(mixture, Mixture):
         raise RuntimeError("** the argument must be a Chemkin Mixture object")
     # initialization a Mixture object by duplication
-    EQState: Mixture = copy.deepcopy(mixture)
+    EQState = copy.deepcopy(mixture)
     # reset mass/mole fractions
     EQState._Xset = 0
     EQState._molefrac[:] = 0.0e0
@@ -604,7 +598,7 @@ def detonation(mixture):
     if not isinstance(mixture, Mixture):
         raise RuntimeError("** the argument must be a Chemkin Mixture object")
     # initialization a Mixture object by duplication
-    EQState: Mixture = copy.deepcopy(mixture)
+    EQState = copy.deepcopy(mixture)
     # reset mass/mole fractions
     EQState._Xset = 0
     EQState._molefrac[:] = 0.0e0
@@ -1691,7 +1685,7 @@ class Mixture:
         :return: gas mixture at the equilibrium state (Mixture object)
         """
         # initialization a Mixture object by duplication
-        EQState: Mixture = copy.deepcopy(self)
+        EQState = copy.deepcopy(self)
         # reset mass/mole fractions
         EQState._Xset = 0
         EQState._molefrac[:] = 0.0e0

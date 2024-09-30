@@ -59,8 +59,6 @@ premixed.temperature = 700.0
 # create a constant pressure batch reactor (with energy equation)
 #
 MyCONP = GivenPressureBatchReactor_EnergyConservation(premixed, label="CONP")
-# set the initial reactor temperature (see the warning message in the run output)
-MyCONP.temperature = 950.0  # K
 # show initial gas composition inside the reactor
 MyCONP.listcomposition(mode="mole")
 # set other reactor parameters
@@ -77,8 +75,6 @@ MyCONP.timestepforsavingsolution = 0.01
 MyCONP.adaptivesolutionsaving(mode=True, value_change=100, target="TEMPERATURE")
 # set tolerance
 MyCONP.settolerances(absolute_tolerance=1.0e-10, relative_tolerance=1.0e-8)
-# change timestep between saving solution
-MyCONP.timestepforsavingsolution = 0.01
 # set ignition delay
 # ck.showignitiondefinition()
 MyCONP.setignitiondelay(method="T_inflection")
