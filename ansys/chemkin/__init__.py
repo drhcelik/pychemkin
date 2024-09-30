@@ -31,7 +31,7 @@ print(
     end="\n" + Color.END,
 )
 # get ansys installation location
-ansys_dir = ck_wrapper._ansys_dir
+ansys_dir = str(ck_wrapper._ansys_dir)
 
 _chemkin_platform = None
 if platform.system() == "Windows":
@@ -73,6 +73,7 @@ def keywordhints(mykey):
     :return: None
     """
     # look up the keyword
+    global _CKdict
     key = _CKdict.get(mykey.upper())
     if key is not None:
         # fetch the information about the keyword
@@ -94,6 +95,7 @@ def phrasehints(phrase):
     """
     # initialization
     keys = []
+    global _CKdict
     # search to find keyword descriptions that contain the phrase
     for s in _CKdict.values():
         if phrase.lower() in s.get("Description"):

@@ -38,6 +38,7 @@ _chemsetidentifiers: List = (
 
 _chemkinverbose = True  # verbose mode to turn ON/OFF the print statements that do not have the leading '**' characters
 _CKdict: Dict = {}  # chemkin hints
+_CKInitialized: Dict = {}  # KINetics initialization flag for every Chemistry Set
 # == end of global parameters
 
 
@@ -172,6 +173,34 @@ def interpolatearray(x, xarray, yarray):
     y = (1.0e0 - ratio) * yarray[ileft]
     y += ratio * yarray[ileft + 1]
     return y
+
+
+def checkchemistryset(chemID):
+    """
+    check whether the Chemistry Set is initialized in KINetics
+    :param chemID: chemistry set index associated with the Chemistry Set
+    """
+    global _CKInitialized
+    status = _CKInitialized.get(chemID, False)
+    return status
+
+
+def chemistrysetnew(chemID):
+    """
+    Create a new Chemistry Set initialization flag and set the value to False
+    :param chemID: chemistry set index associated with the Chemistry Set
+    """
+    global _CKInitialized
+    _CKInitialized[chemID] = False
+
+
+def chemistrysetinitialized(chemID):
+    """
+    Set the Chemistry Set Initialization flag to True
+    :param chemID: chemistry set index associated with the Chemistry Set
+    """
+    global _CKInitialized
+    _CKInitialized[chemID] = True
 
 
 def checkrealgasstatus(chemID):
@@ -897,7 +926,11 @@ class Chemistry:
             # get atomic masses
             self._AWT = self.AWT
             # check real-gas model
-            # self.verifyrealgasmodel()
+            self.verifyrealgasmodel()
+            # create a new KINetics initialization flag for this Chemistry Set
+            chemistrysetnew(self._chemset_index.value)
+            # save the chemkin work spaces for later use (by using active())
+            self.save()
         else:
             # fail to preprocess the chemistry files
             print(
@@ -914,7 +947,6 @@ class Chemistry:
     def verifyrealgasmodel(self):
         """
         Verify the availability of real-gas data in the mechanism
-        :return: None
         """
         EOSModel = ctypes.create_string_buffer(MAX_SPECIES_LENGTH)
         try:
@@ -922,24 +954,32 @@ class Chemistry:
             iErr = ck_wrapper.chemkin.KINRealGas_GetEOSMode(
                 self._chemset_index, self._EOS, EOSModel
             )
-            print(
-                Color.YELLOW
-                + f"** real-gas cubic EOS '{EOSModel.value.decode()}' is available",
-                end="\n" + Color.END,
-            )
-            if iErr != 0:
-                print(
-                    Color.RED + f"** Warning: method returned '{iErr}' error code",
-                    end="\n" + Color.END,
-                )
+            if iErr == 0:
+                if self._EOS.value > 0 and self._EOS.value <= 5:
+                    print(
+                        Color.YELLOW
+                        + f"** real-gas cubic EOS '{EOSModel.value.decode()}' is available",
+                        end="\n" + Color.END,
+                    )
+                    del EOSModel
+                    return
+
+            self._EOS = c_int(0)
         except OSError:
             # mechanism contains no real-gas data
             self._EOS = c_int(0)
             if verbose():
                 print(
-                    Color.YELLOW + "** mechanism is for ideal gas law only",
+                    Color.PURPLE + "** error accessing the real gas information",
                     end="\n" + Color.END,
                 )
+
+        del EOSModel
+        if verbose():
+            print(
+                Color.YELLOW + "** mechanism is for ideal gas law only",
+                end="\n" + Color.END,
+            )
 
     @property
     def speciessymbols(self):
@@ -1490,3 +1530,38 @@ class Chemistry:
         reactionstring = rstring.decode()[0 : iStringSize.value]
         del rstring
         return reactionstring
+
+    def save(self):
+        """
+        Store the work spaces of the current Chemistry Set
+        if new Chemistry Set will be created later in the same project
+        """
+        iErr = ck_wrapper.chemkin.KINUpdateChemistrySet(self._chemset_index)
+        if iErr == 0:
+            print(
+                Color.YELLOW + f"** Work spaces saved for Chemistry Set {self.label}",
+                end="\n" + Color.END,
+            )
+        else:
+            print(
+                Color.PURPLE + "** error saving the Chemistry Set work spaces",
+                end="\n" + Color.END,
+            )
+
+    def activate(self):
+        """
+        Switch to (re-activate) the work spaces of the current Chemistry Set
+        when there are multiple Chemistry Sets in the same project
+        """
+        iErr = ck_wrapper.chemkin.KINSwitchChemistrySet(self._chemset_index)
+        if iErr == 0:
+            print(
+                Color.YELLOW
+                + f"** Work spaces for Chemistry Set {self.label} activated",
+                end="\n" + Color.END,
+            )
+        else:
+            print(
+                Color.PURPLE + "** error reactivating the Chemistry Set work spaces",
+                end="\n" + Color.END,
+            )
