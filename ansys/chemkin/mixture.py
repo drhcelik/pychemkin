@@ -1692,7 +1692,7 @@ class Mixture:
         EQState._Yset = 0
         EQState._massfrac[:] = 0.0e0
         # compute the equilibrium state (mass fraction for now)
-        EQState._massfrac = calculateequilibrium(
+        eqvars, EQState._massfrac = calculateequilibrium(
             self._chemset_index.value,
             p=EQState.pressure,
             t=EQState.temperature,
