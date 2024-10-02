@@ -36,10 +36,12 @@ m.close()
 # set mechanism input files
 # inclusion of the full file path is recommended
 MyGasMech.chemfile = mymechfile
-MyGasMech.thermfile = os.path.join(data_dir,
-                                   "ModelFuelLibrary",
-                                   "Full",
-                                   "Gasoline-Diesel-Biodiesel_PAH_NOx_therm_MFL2023.dat")
+MyGasMech.thermfile = os.path.join(
+    data_dir,
+    "ModelFuelLibrary",
+    "Full",
+    "Gasoline-Diesel-Biodiesel_PAH_NOx_therm_MFL2023.dat",
+)
 # pre-process
 iError = MyGasMech.preprocess()
 if iError == 0:
