@@ -682,6 +682,15 @@ chemkin.KINAll0D_GetHeatRelease.argtypes = [
     ctypes.POINTER(ctypes.c_double),
     ctypes.POINTER(ctypes.c_double),
 ]
+chemkin.KINAll0D_GetEngineHeatRelease.restype = ctypes.c_int
+chemkin.KINAll0D_GetEngineHeatRelease.argtypes = [
+    np.ctypeslib.ndpointer(dtype=np.double, flags="C_CONTIGUOUS"),
+    ctypes.POINTER(ctypes.c_double),
+    ctypes.POINTER(ctypes.c_double),
+    ctypes.POINTER(ctypes.c_double),
+    ctypes.POINTER(ctypes.c_double),
+    ctypes.POINTER(ctypes.c_double),
+]
 # Oppdif interfaces
 chemkin.KINOppdif_SetInlet.restype = ctypes.c_int
 chemkin.KINOppdif_SetParameter.restype = ctypes.c_int

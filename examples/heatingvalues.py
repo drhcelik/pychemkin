@@ -3,13 +3,70 @@ import os
 import numpy as np  # number crunching
 
 import chemkin as ck
+from chemkin import Color
 
-# create the mechanism file with fuel species and complete combustion products only
-# no reaction
 # check working directory
 current_dir = os.getcwd()
 # set mechanism directory (the default chemkin mechanism data directory)
 data_dir = os.path.join(ck.ansys_dir, "reaction", "data")
+# set pressure & temperature condition
+thispressure = ck.Patm
+thistemperature = 298.15
+
+
+#
+def getwaterheatofvaporization(temp):
+    """
+    Compute water heat of vaporization [erg/g-water] at the given temperature
+    Use the enthalpy difference between water vapor and liquid water at the temperature
+    Enthalpy data depend on temperature only
+    There are empirical formulas for heat of vaporization, for example, DIPPR EQ
+    :param temp: temperature [K] (double scalar)
+    """
+    # compute water heat of vaporization
+    # create a chemistry set object
+    WaterMech = ck.Chemistry(label="Water Only")
+    #
+    # create a new mechanism input file
+    #
+    waterfile = os.path.join(current_dir, "water_chem.inp")
+    w = open(waterfile, "w")
+    # the water mechanism contains two species:
+    # water vapor (H2O) and liquid water (H2O(L))
+    # decalre elements
+    w.write("ELEMENT H O END\n")
+    w.write("SPECIES\n")
+    w.write("H2O   H2O(L)\n")
+    w.write("END\n")
+    # no reaction is needed for thermodynamic property calculation
+    w.write("REACTION\n")
+    w.write("END\n")
+    # close the mechnaism file
+    w.close()
+    # set mechanism input files
+    # inclusion of the full file path is recommended
+    WaterMech.chemfile = waterfile
+    WaterMech.thermfile = os.path.join(
+        data_dir,
+        "therm.dat",
+    )
+    # pre-process
+    iError = WaterMech.preprocess()
+    if iError != 0:
+        return 0.0
+    # get species enthalpies [erg/mol] at 298.15 [K]
+    waterenthalpies = WaterMech.SpeciesH(thistemperature)
+    # compute heat of vaporization of water [erg/g-water]
+    # H_water_vapor - H_liquid_water
+    heatvaporization = (waterenthalpies[0] - waterenthalpies[1]) / WaterMech.WT[0]
+    # remove the temporary water mechanism file
+    os.remove(waterfile)
+    return heatvaporization
+
+
+#
+# create the mechanism file with fuel species and complete combustion products only
+# no reaction
 # create a chemistry set object
 MyGasMech = ck.Chemistry(label="EQ")
 #
@@ -20,11 +77,22 @@ m = open(mymechfile, "w")
 # the mechanism contains only the necessary species (fuel, oxygen, and major combustion products)
 # decalre elements
 m.write("ELEMENT c h o END\n")
-# declare species (h2o(l) is used to compute High heating values)
+# declare species
+# ch4: Methane                  c4h10: n-Butane
+# nc5h12: n-Pentane             nc7h16: n-Heptane
+# ic8h18: iso-Octane            nc9h20: n-Nonane
+# nc10h22: n-Decane             hmn: Heptamethylnonane
+# c6h5ch3: Toluene              c6h5c2h5: Ethylbenzene
+# chx: Cyclohexane              mch: Methylcyclohexane
+# decalin: Decalin              ch3oh: Methanol
+# c2h5oh: Alcohol               ch3och3: Dimethyl ether (DME)
+# nc4h9oh: n-Butanol            mb: Mythyl butanoate
+# md: Methyl decanoate          mhd: Methyl stearate
 m.write("SPECIES\n")
 m.write("ch4 c4h10 nc5h12 nc7h16 ic8h18 nc9h20 nc10h22\n")
-m.write("hmn c6h5ch3 c6h5c2h5\n")
-m.write("chx mch decalin etbe mtbe\n")
+m.write("hmn c6h5ch3 c6h5c2h5 chx mch decalin\n")
+m.write("ch3oh c2h5oh ch3och3 nc4h9oh\n")
+m.write("mb md mhd\n")
 m.write("o2 co2 h2o\n")
 m.write("END\n")
 # no reaction is needed for equilibrium calculation
@@ -45,9 +113,9 @@ MyGasMech.thermfile = os.path.join(
 # pre-process
 iError = MyGasMech.preprocess()
 if iError == 0:
-    print(ck.Color.GREEN + ">>> preprocess OK", end="\n" + ck.Color.END)
+    print(Color.GREEN + ">>> preprocess OK", end=Color.END)
 else:
-    print(ck.Color.RED + ">>> preprocess failed!", end="\n" + ck.Color.END)
+    print(Color.RED + ">>> preprocess failed!", end=Color.END)
     exit()
 #
 # set pressure & temperature condition
@@ -59,14 +127,24 @@ unburned.pressure = thispressure
 unburned.temperature = thistemperature
 # find the index for water vapor
 watervaporID = MyGasMech.getspecindex("h2o")
-# water latent heat [erg/g-water] at 298.15 [K]
-latentheat = 2444.421181749129 * ck.ergsperjoule
+# water heat of vaporization [erg/g-water] at 298.15 [K]
+# either call this method before creating the current Chemistry Set
+# or use the activate method to switch back to the current Chemistry Set after the call
+heatvaporization = getwaterheatofvaporization(thistemperature)
+# switch back to MyGasMech
+MyGasMech.activate()
 # prepare the fuel mixture
 fuel = ck.Mixture(MyGasMech)
 fuel.pressure = thispressure
 fuel.temperature = thistemperature
-# list of fuel compositions of which the heating values will be computed
-fuels = [[("ch4", 1.0)], [("c4h10", 1.0)], [("nc7h16", 0.2), ("ic8h18", 0.8)]]
+# list of fuel compositions (mole/volume fractions) of which the heating values will be computed
+# [Methane, n-Butane, PRF RON 80, biodiesel]
+fuels = [
+    [("ch4", 1.0)],
+    [("c4h10", 1.0)],
+    [("nc7h16", 0.2), ("ic8h18", 0.8)],
+    [("mhd", 0.9), ("ch3oh", 0.1)],
+]
 # specify oxidizers = pure oxygen
 oxid = ck.Mixture(MyGasMech)
 oxid.X = [("o2", 1.0)]
@@ -85,14 +163,17 @@ LHV = np.zeros(len(fuels), dtype=np.double)
 HHV = np.zeros_like(LHV, dtype=np.double)
 fuelcount = 0
 for f in fuels:
+    # re-set the fuel composition (mole/volume fractions)
     fuel.X = f
+    # create a soichiometric fuel-oxygen mixture
     iError = unburned.XbyEquivalenceRatio(
         MyGasMech, fuel.X, oxid.X, add_frac, products, equivalenceratio=1.0
     )
     # get the mixture enthalpy of the initial mixture [erg/g]
     Hunburned = unburned.HML() / unburned.WTM
     # compute the complete combustion state (fixed temperature and pressure)
-    # burned = ck.equilibrium(unburned, opt=1)
+    # this step mimics the complete burning of the initial fuel-oxygen mixture at constant pressure
+    # and the subsequent cooling of the combustion prodcts back to the original temperature
     burned = unburned.FindEquilibrium()
     # get the mixture enthalpy of the final mixture [erg/g]
     Hburned = burned.HML() / burned.WTM
@@ -106,11 +187,12 @@ for f in fuels:
     wmass = burned.Y[watervaporID]
     #
     if np.isclose(fmass, 0.0, atol=1.0e-10):
-        print(f">>> error finding fuel species {f} in the unburned mixture")
+        # no fuel species exists in the unburned mixture
+        print(f">>> error no fuel species in the unburned mixture {f}")
         exit()
     # compute the heating values [erg/g-fuel]
     LHV[fuelcount] = -(Hburned - Hunburned) / fmass
-    HHV[fuelcount] = -(Hburned - (Hunburned + latentheat * wmass)) / fmass
+    HHV[fuelcount] = -(Hburned - (Hunburned + heatvaporization * wmass)) / fmass
     fuelcount += 1
 
 # display results
