@@ -1,15 +1,11 @@
 import copy
 from ctypes import c_double, c_int
 import logging
+
 import numpy as np
 
 from .. import chemkin_wrapper
-from ..chemistry import (
-    Patm,
-    checkchemistryset,
-    chemistrysetinitialized,
-    setverbose,
-)
+from ..chemistry import Patm, checkchemistryset, chemistrysetinitialized, setverbose
 from ..color import Color as Color
 from ..reactormodel import Keyword
 from .engine import Engine
@@ -181,12 +177,12 @@ class HCCIengine(Engine):
         if len(zonemolefrac) != nzones:
             print(
                 Color.PURPLE
-                + f"** zonal gas mole fraction must be a list of "
+                + "** zonal gas mole fraction must be a list of "
                 + f" {nzones} double/float mole fraction arrays",
                 end=Color.END,
             )
             exit()
-        
+
         if self._zonalsetupmode == 2:
             print(
                 Color.YELLOW
@@ -255,7 +251,7 @@ class HCCIengine(Engine):
         if len(addfrac) != nzones:
             print(
                 Color.PURPLE
-                + f"** zonal additive gas mole fraction must be a list of "
+                + "** zonal additive gas mole fraction must be a list of "
                 + f" {nzones} double/float mole fraction arrays",
                 end=Color.END,
             )

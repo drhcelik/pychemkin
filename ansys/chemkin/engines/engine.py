@@ -475,7 +475,8 @@ class Engine(BatchReactors):
             self.setkeyword(key="DEGPRINT", value=delta_CA)
         else:
             print(
-                Color.PURPLE + "** solution printing number of crank angles value must > 0",
+                Color.PURPLE
+                + "** solution printing number of crank angles value must > 0",
                 end=Color.END,
             )
 
@@ -550,7 +551,8 @@ class Engine(BatchReactors):
         # check existing gas velocity correlation parameter
         if self.gasvelocity is not None:
             print(
-                Color.YELLOW + "** previous gas velocity correlation will be overwritten",
+                Color.YELLOW
+                + "** previous gas velocity correlation will be overwritten",
                 end=Color.END,
             )
         # check number of parameters
@@ -644,10 +646,9 @@ class Engine(BatchReactors):
             QLossRateCA, AHRR, AHRRP, HR10, HR50, HR90
         )
         if iErr != 0:
-            # reset the angles to 0 when error is encountered 
+            # reset the angles to 0 when error is encountered
             HR10 = c_double(0.0)
             HR50 = c_double(0.0)
             HR90 = c_double(0.0)
 
         return HR10.value, HR50.value, HR90.value
-    
