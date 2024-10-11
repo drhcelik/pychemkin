@@ -143,7 +143,9 @@ def test_HCCI():
     # MyEngine.stopafterignition()
     # show solver option
     # show the number of crank angles between printng solution
-    print(f"crank angles between solution printing: {MyEngine.CAstepforprintingsolution}")
+    print(
+        f"crank angles between solution printing: {MyEngine.CAstepforprintingsolution}"
+    )
     # show other transient solver setup
     print(f"forced non-negative solution values: {MyEngine.forcenonnegative}")
     # show the additional keywords given by user

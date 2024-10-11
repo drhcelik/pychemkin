@@ -8,7 +8,7 @@ from chemkin import Color
 
 # chemkin engine models (transient)
 from chemkin.batchreactors.batchreactor import (
-    GivenPressureBatchReactor_FixedTemperature
+    GivenPressureBatchReactor_FixedTemperature,
 )
 
 # import pytest
@@ -38,7 +38,7 @@ def test_watercondensation():
     mist.pressure = 100.0 * ck.Patm
     # set mixture mixing rule to Van der Waals (default)
     # mist.setrealgasmixingrule(rule=0)
-        # create a constant volume batch reactor (with energy equation)
+    # create a constant volume batch reactor (with energy equation)
     #
     bottle = GivenPressureBatchReactor_FixedTemperature(mist, label="bottle")
     # show initial gas composition inside the reactor

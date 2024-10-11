@@ -15,6 +15,7 @@ data_dir = os.path.join(ck.ansys_dir, "reaction", "data")
 thispressure = ck.Patm
 thistemperature = 298.15
 
+
 #
 def getwaterheatofvaporization(temp):
     """
@@ -199,7 +200,9 @@ def test_heatingvalues():
         fuelcount += 1
 
     # display results
-    print(f"Fuel Heating Values at {thistemperature} [K] and {thispressure*1.0e-6} [bar]\n")
+    print(
+        f"Fuel Heating Values at {thistemperature} [K] and {thispressure*1.0e-6} [bar]\n"
+    )
     for i in range(len(fuels)):
         print(f"fuel composition:  {fuels[i]}")
         print(f" LHV [kJ/g-fuel]:  {LHV[i] / ck.ergsperjoule / 1.0e3}")
