@@ -127,8 +127,8 @@ def test_watercondensation():
     plt.xlabel("time [sec]")
     plt.ylabel("Mixture Dernsity [g/cm3]")
     # display the plots
-    # plt.savefig("water_solution.png", bbox_inches="tight")
-    plt.show()
+    plt.savefig("water_solution.png", bbox_inches="tight")
+    # plt.show()
 
 
 if __name__ == "__main__":
