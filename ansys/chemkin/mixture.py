@@ -1447,8 +1447,7 @@ class Mixture:
         # real-gas
         if checkrealgasstatus(chemID):
             # real-gas cubic EOS is active, set current pressure that is required by the chemkin real-gas module
-            pp = c_double(p)
-            setcurrentpressure(chemID, pp)
+            setcurrentpressure(chemID, p)
         # compute mass density from mass fraction
         iErr = ck_wrapper.chemkin.KINGetGasMixtureSpecificHeat(
             chemset_index, tt, yy, CpB_C
@@ -1518,8 +1517,7 @@ class Mixture:
         # real-gas
         if checkrealgasstatus(chemID):
             # real-gas cubic EOS is active, set current pressure that is required by the chemkin real-gas module
-            pp = c_double(p)
-            setcurrentpressure(chemID, pp)
+            setcurrentpressure(chemID, p)
         # compute enthalpy from mass fraction
         iErr = ck_wrapper.chemkin.KINGetGasMixtureEnthalpy(chemset_index, tt, yy, H_C)
         # compute mean molar mass

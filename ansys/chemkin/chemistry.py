@@ -221,6 +221,11 @@ def checkrealgasstatus(chemID):
 
 
 def setcurrentpressure(chemID, pressure):
+    """
+    Set gas mixture pressure for real-gas EOS calculations
+    :param chemID: Chemistry set index (integer scalar)
+    :param pressure: gas pressure [dynes/cm2] (double scalar)
+    """
     # convert variables
     chemset_index = c_int(chemID)
     p = c_double(pressure)
