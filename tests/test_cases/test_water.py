@@ -30,6 +30,11 @@ def test_watercondensation():
     MyMech.chemfile = os.path.join(mechanism_dir, "C2_NOx_SRK.inp")
     # preprocess the 2nd mechanism files
     iError = MyMech.preprocess()
+    if iError == 0:
+        print(Color.GREEN + ">>> preprocess OK", end=Color.END)
+    else:
+        print(Color.RED + ">>> preprocess failed!", end=Color.END)
+        exit()
     # create the air+vapor mixture
     mist = ck.Mixture(MyMech)
     # set mole fraction
