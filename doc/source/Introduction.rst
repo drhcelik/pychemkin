@@ -8,7 +8,7 @@ What is **PyChemkin**? **PyChemkin**, in its core, inherites all Chemkin functio
    2. the *Mixture* object: the *core* concept in **PyChemkin** representing a gas mixture and the basic element that can be manipulated and transformed.
    3. the *Reactor* object: instance of a Chemkin reactor model that transforms the initial *Mixture* to another *Mixture*.
 
-   The figure below is a schematic of **PyChemkin**'s *Mixture*-centric concept showing the basic types of operations applicable to the *Mixture* object in **PyChemkin**: create (by inheriting all properties of a *Chemistry Set*), combine/mix (with constraint), equilibrize (with constraints), and process (by a reactor model)
+   The figure below is a schematic of **PyChemkin**'s *Mixture*-centric concept showing the basic types of operations applicable to the *Mixture* object in **PyChemkin**: create (by inheriting all properties of a *Chemistry Set*), combine/mix (with constraint), equilibrium (with constraints), and process (by a reactor model)
 
    .. image:: tutorials/mixture_concept.png
       :width: 600
