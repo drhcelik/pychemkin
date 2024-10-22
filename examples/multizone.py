@@ -5,7 +5,6 @@ import numpy as np  # number crunching
 
 import chemkin as ck  # Chemkin
 from chemkin import Color
-
 # chemkin homonegeous charge compression ignition (HCCI) engine model (transient)
 from chemkin.engines.HCCI import HCCIengine
 
@@ -75,34 +74,33 @@ iError = fresh.XbyEquivalenceRatio(
 # list the composition of the fuel+air+EGR mixture
 fresh.listcomposition(mode="mole", bound=1.0e-8)
 # HCCI engine
-# create a single-zone HCCI engine object
-MyEngine = HCCIengine(reactor_condition=fresh, nzones=1)
+# create a 5-zones HCCI engine object
+numbzones = 5
+MyMZEngine = HCCIengine(reactor_condition=fresh, nzones=numbzones)
 # show initial gas composition inside the reactor
-MyEngine.listcomposition(mode="mole", bound=1.0e-8)
+MyMZEngine.listcomposition(mode="mole", bound=1.0e-8)
 #
 # set engine parameters
 # cylinder bore diameter [cm]
-MyEngine.bore = 12.065
+MyMZEngine.bore = 12.065
 # engine stroke [cm]
-MyEngine.stroke = 14.005
+MyMZEngine.stroke = 14.005
 # connecting rod length [cm]
-MyEngine.connectingrod = 26.0093
+MyMZEngine.connectingrod = 26.0093
 # compression ratio [-]
-MyEngine.compressionratio = 16.5
+MyMZEngine.compressionratio = 16.5
 # engine speed [RPM]
-MyEngine.RPM = 1000
-# set piston pin offset distance [cm]
-MyEngine.setpistonpinoffset(offset=-0.5)
+MyMZEngine.RPM = 1000
 # set other parameters
 # simulation start CA [degree]
-MyEngine.startingCA = -142.0
+MyMZEngine.startingCA = -142.0
 # simulation end CA [degree]
-MyEngine.endingCA = 116.0
+MyMZEngine.endingCA = 116.0
 # list the engine parameters
-MyEngine.listengineparameters()
-print(f"engine displacement volume {MyEngine.getdisplacementvolume()} [cm3]")
-print(f"engine clearance volume {MyEngine.getclearancevolume()} [cm3]")
-print(f"number of zone(s) = {MyEngine.getnumberofzones()}")
+MyMZEngine.listengineparameters()
+print(f"engine displacement volume {MyMZEngine.getdisplacementvolume()} [cm3]")
+print(f"engine clearance volume {MyMZEngine.getclearancevolume()} [cm3]")
+print(f"number of zone(s) = {MyMZEngine.getnumberofzones()}")
 # wall heat transfer model
 # set model parameters
 # "dimensionless": [<a> <b> <c> <Twall>]
@@ -111,46 +109,71 @@ print(f"number of zone(s) = {MyEngine.getnumberofzones()}")
 heattransferparameters = [0.035, 0.71, 0.0]
 # set cylinder wall temperature [K]
 Twall = 400.0
-MyEngine.setwallheatransfer("dimensionless", heattransferparameters, Twall)
+MyMZEngine.setwallheatransfer("dimensionless", heattransferparameters, Twall)
 # incylinder gas velocity correlation parameter (Woschni)
 # [<C11> <C12> <C2> <swirl ratio>]
 GVparameters = [2.28, 0.308, 3.24, 0.0]
-MyEngine.setgasvelocitycorrelation(GVparameters)
+MyMZEngine.setgasvelocitycorrelation(GVparameters)
 # set piston head top surface area [cm2]
-MyEngine.setpistonheadarea(area=124.75)
+MyMZEngine.setpistonheadarea(area=124.75)
 # set cylinder clearance surface area [cm2]
-MyEngine.setcylinderheadarea(area=123.5)
+MyMZEngine.setcylinderheadarea(area=123.5)
+# set zonal properties
+# zonal temperatures [K]
+ztemperature = [447.5, 447.5, 447, 447, 447]
+MyMZEngine.setzonaltemperature(zonetemp=ztemperature)
+# zonal volume fractions
+zvolumefrac = [0.3, 0.25, 0.2, 0.2, 0.05]
+MyMZEngine.setzonalvolume(zonevol=zvolumefrac)
+# wall heat transfer area fractions
+zHTarea = [0.0, 0.15, 0.2, 0.25, 0.4]
+MyMZEngine.setzonalheattransferarea(zonearea=zHTarea)
+# zonal equivalence ratios
+zphi = [equiv, equiv, equiv, equiv, equiv]
+MyMZEngine.setzonalequivalenceratio(zonephi=zphi)
+# zonal EGR ratios
+zEGRR = [0.3, 0.3, 0.3, 0.35, 0.35]
+MyMZEngine.setzonalEGRratio(zoneegr=zEGRR)
+# set fuel "molar" composition
+MyMZEngine.definefuel([("CH4", 0.9), ("C3H8", 0.05), ("C2H6", 0.05)])
+# set oxidizer "molar' composition
+MyMZEngine.defineoxid([("O2", 0.21), ("N2", 0.79)])
+# set products
+MyMZEngine.defineproduct(["CO2", "H2O", "N2"])
+# set EGR composition in mole fractions
+zadd = [add_frac, add_frac, add_frac, add_frac, add_frac]
+MyMZEngine.defineaddfractions(addfrac=zadd)
 # output controls
 # set the number of crank angles between saving solution
-MyEngine.CAstepforsavingsolution = 0.5
+MyMZEngine.CAstepforsavingsolution = 0.5
 # set the number of crank angles between printing solution
-MyEngine.CAstepforprintingsolution = 10.0
+MyMZEngine.CAstepforprintingsolution = 10.0
 # turn ON adaptive solution saving
-MyEngine.adaptivesolutionsaving(mode=True, steps=20)
+MyMZEngine.adaptivesolutionsaving(mode=True, steps=20)
 # turn OFF adaptive solution saving
-# MyEngine.adaptivesolutionsaving(mode=False)
+# MyMZEngine.adaptivesolutionsaving(mode=False)
 # set tolerance
-MyEngine.settolerances(absolute_tolerance=1.0e-12, relative_tolerance=1.0e-10)
+MyMZEngine.settolerances(absolute_tolerance=1.0e-12, relative_tolerance=1.0e-10)
 # get solver parameters
-ATOL, RTOL = MyEngine.tolerances
+ATOL, RTOL = MyMZEngine.tolerances
 print(f"default absolute tolerance = {ATOL}")
 print(f"default relative tolerance = {RTOL}")
 # turn on the force non-negative solutions option in the solver
-MyEngine.forcenonnegative = True
+MyMZEngine.forcenonnegative = True
 # specify the ignition definitions
 # ck.showignitiondefinition()
-MyEngine.setignitiondelay(method="T_inflection")
+MyMZEngine.setignitiondelay(method="T_inflection")
 # stop the simulation when ignition is detected
-# MyEngine.stopafterignition()
+# MyMZEngine.stopafterignition()
 # show solver option
 # show the number of crank angles between printng solution
-print(f"crank angles between solution printing: {MyEngine.CAstepforprintingsolution}")
+print(f"crank angles between solution printing: {MyMZEngine.CAstepforprintingsolution}")
 # show other transient solver setup
-print(f"forced non-negative solution values: {MyEngine.forcenonnegative}")
+print(f"forced non-negative solution values: {MyMZEngine.forcenonnegative}")
 # show the additional keywords given by user
-MyEngine.showkeywordinputlines()
+MyMZEngine.showkeywordinputlines()
 # run the single-zone HCCI engine model
-runstatus = MyEngine.run()
+runstatus = MyMZEngine.run()
 # check run status
 if runstatus != 0:
     # run failed!
@@ -158,59 +181,86 @@ if runstatus != 0:
     exit()
 # run success!
 print(Color.GREEN + ">>> RUN COMPLETED <<<", end=Color.END)
+#
 # get ignition delay "time"
-delayCA = MyEngine.getignitiondelay()
+delayCA = MyMZEngine.getignitiondelay()
 print(f"ignition delay CA = {delayCA} [degree]")
+#
 # get heat release information
-HR10, HR50, HR90 = MyEngine.getengineheatrelease()
+HR10, HR50, HR90 = MyMZEngine.getengineheatrelease()
 print("Engine Heat Release Information")
 print(f"10% heat release CA = {HR10} [degree]")
 print(f"50% heat release CA = {HR50} [degree]")
 print(f"90% heat release CA = {HR90} [degree]\n")
-# post-process the solutions
-MyEngine.processenginesolution()
+#
+# post-process the solution profiles in selected zone
+thiszone = 5
+MyMZEngine.processenginesolution(zoneID=thiszone)
+plottitle = "Zone " + str(thiszone) + " Solution"
+# post-process cylinder-averged solution profiles
+# MyMZEngine.processaverageenginesolution()
+# plottitle = "Cylinder Averaged Solution"
 # get the number of solution time points
-solutionpoints = MyEngine.getnumbersolutionpoints()
+solutionpoints = MyMZEngine.getnumbersolutionpoints()
 print(f"number of solution points = {solutionpoints}")
 # get the time profile
-timeprofile = MyEngine.getsolutionvariableprofile("time")
+timeprofile = MyMZEngine.getsolutionvariableprofile("time")
 # convert time to crank angle
 CAprofile = np.zeros_like(timeprofile, dtype=np.double)
 count = 0
 for t in timeprofile:
-    CAprofile[count] = MyEngine.toCA(timeprofile[count])
+    CAprofile[count] = MyMZEngine.toCA(timeprofile[count])
     count += 1
 # get the cylinder pressure profile
-presprofile = MyEngine.getsolutionvariableprofile("pressure")
+presprofile = MyMZEngine.getsolutionvariableprofile("pressure")
 presprofile *= 1.0e-6
-# get the volume profile
-volprofile = MyEngine.getsolutionvariableprofile("volume")
-# create arrays for mixture density, NO mole fraction, and mixture specific heat capacity
+# get the zonal volume profile
+volprofile = MyMZEngine.getsolutionvariableprofile("volume")
+# create arrays for zonal mixture density and mixture specific heat capacity
 denprofile = np.zeros_like(timeprofile, dtype=np.double)
-Cpprofile = np.zeros_like(timeprofile, dtype=np.double)
+viscprofile = np.zeros_like(timeprofile, dtype=np.double)
 # loop over all solution time points
 for i in range(solutionpoints):
-    # get the mixture at the time point
-    solutionmixture = MyEngine.getsolutionmixtureatindex(solution_index=i)
-    # get gas density [g/cm3]
+    # get the zonal mixture at the time point
+    solutionmixture = MyMZEngine.getsolutionmixtureatindex(solution_index=i)
+    # get zonal gas density [g/cm3]
     denprofile[i] = solutionmixture.RHO
-    # get mixture specific heat capacity profile [erg/mole-K]
-    Cpprofile[i] = solutionmixture.CPBL() / ck.ergsperjoule * 1.0e-3
+    # get zonal mixture viscosity profile [g/cm-sec] or [Poise]
+    viscprofile[i] = solutionmixture.mixtureviscosity() * 1.0e2
+#
+# post-process cylinder-averged solution
+MyMZEngine.processaverageenginesolution()
+# get the cylinder volume profile
+cylindervolprofile = MyMZEngine.getsolutionvariableprofile("volume")
+# create arrays for cylinder-averaged mixture density
+cylinderdenprofile = np.zeros_like(timeprofile, dtype=np.double)
+# loop over all solution time points
+for i in range(solutionpoints):
+    # get the zonal mixture at the time point
+    solutionmixture = MyMZEngine.getsolutionmixtureatindex(solution_index=i)
+    # get zonal gas density [g/cm3]
+    cylinderdenprofile[i] = solutionmixture.RHO
+#
 # plot the profiles
 plt.subplots(2, 2, sharex="col", figsize=(12, 6))
+plt.suptitle(plottitle, fontsize=16)
 plt.subplot(221)
 plt.plot(CAprofile, presprofile, "r-")
 plt.ylabel("Pressure [bar]")
 plt.subplot(222)
 plt.plot(CAprofile, volprofile, "b-")
+plt.plot(CAprofile, cylindervolprofile, "b--")
 plt.ylabel("Volume [cm3]")
+plt.legend(["Zone", "Cylinder"], loc="upper right")
 plt.subplot(223)
 plt.plot(CAprofile, denprofile, "g-")
+plt.plot(CAprofile, cylinderdenprofile, "g--")
 plt.xlabel("Crank Angle [degree]")
 plt.ylabel("Mixture Density [g/cm3]")
+plt.legend(["Zone", "Averaged"], loc="upper left")
 plt.subplot(224)
-plt.plot(CAprofile, Cpprofile, "m-")
+plt.plot(CAprofile, viscprofile, "m-")
 plt.xlabel("Crank Angle [degree]")
-plt.ylabel("Mixture Cp [kJ/mole]")
+plt.ylabel("Mixture Viscosity [cP]")
 # display the plots
 plt.show()

@@ -691,6 +691,38 @@ chemkin.KINAll0D_GetEngineHeatRelease.argtypes = [
     ctypes.POINTER(ctypes.c_double),
     ctypes.POINTER(ctypes.c_double),
 ]
+# Premix interfaces
+chemkin.KINPremix_SetParameter.restype = ctypes.c_int
+chemkin.KINPremix_SetParameter.argtypes = [
+    ctypes.POINTER(ctypes.c_char),
+    ctypes.POINTER(ctypes.c_double),
+]
+chemkin.KINPremix_CalculateFlame.restype = ctypes.c_int
+chemkin.KINPremix_CalculateFlame.argtypes = [
+    ctypes.POINTER(ctypes.c_int),
+    ctypes.POINTER(ctypes.c_int),
+    ctypes.POINTER(ctypes.c_double),
+    ctypes.POINTER(ctypes.c_double),
+    np.ctypeslib.ndpointer(dtype=np.double, flags="C_CONTIGUOUS"),
+    ctypes.POINTER(ctypes.c_double),
+    ctypes.POINTER(ctypes.c_double),
+]
+chemkin.KINPremix_GetSolution.restype = ctypes.c_int
+chemkin.KINPremix_GetSolution.argtypes = [
+    ctypes.POINTER(ctypes.c_int),
+    ctypes.POINTER(ctypes.c_int),
+    np.ctypeslib.ndpointer(dtype=np.double, flags="C_CONTIGUOUS"),
+    np.ctypeslib.ndpointer(dtype=np.double, flags="C_CONTIGUOUS"),
+    np.ctypeslib.ndpointer(dtype=np.double, flags="F_CONTIGUOUS"),
+]
+chemkin.KINPremix_GetSolutionGridPoints.restype = ctypes.c_int
+chemkin.KINPremix_GetSolutionGridPoints.argtypes = [
+    ctypes.POINTER(ctypes.c_int),
+]
+chemkin.KINPremix_GetFlameMassFlux.restype = ctypes.c_int
+chemkin.KINPremix_GetFlameMassFlux.argtypes = [
+    ctypes.POINTER(ctypes.c_double),
+]
 # Oppdif interfaces
 chemkin.KINOppdif_SetInlet.restype = ctypes.c_int
 chemkin.KINOppdif_SetParameter.restype = ctypes.c_int

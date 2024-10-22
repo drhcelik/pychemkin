@@ -49,6 +49,8 @@ class BatchReactors(reactor):
         self._numb_requiredinput = 0
         self._requiredlist = []
         self._inputcheck = []
+        # default number of reactors
+        self._nreactors = 1
 
     @property
     def volume(self):
@@ -600,7 +602,7 @@ class BatchReactors(reactor):
                 Site_init,
                 Bulk_init,
             )
-            iErr = +iErrc
+            iErr += iErrc
 
         # set reactor type
         self.setreactortypekeywords()
@@ -688,7 +690,7 @@ class BatchReactors(reactor):
                 Site_init,
                 Bulk_init,
             )
-            iErr = +iErrc
+            iErr += iErrc
             # heat transfer (use additional keywords)
             # solver parameters (use additional keywords)
             # output controls (use additional keywords)
@@ -845,25 +847,25 @@ class BatchReactors(reactor):
         npoints = c_int(0)
         # get solution size of the batch reactor
         iErr = chemkin_wrapper.chemkin.KINAll0D_GetSolnResponseSize(nreac, npoints)
-        self._nreactors = nreac.value
-        if iErr == 0 and self._nreactors == 1:
+        nreactors = nreac.value
+        if iErr == 0 and nreactors == self._nreactors:
             # return the solution sizes
             self._numbsolutionpoints = (
                 npoints.value
             )  # number of time points in the solution profile
             return self._nreactors, self._numbsolutionpoints
-        elif self._nreactors == 1:
+        elif self._nreactors == nreactors:
             # fail to get solution sizes
             print(
                 Color.PURPLE + f"** failed to get solution size, error code = {iErr}",
                 end=Color.END,
             )
-            return self._nreactors, 0
+            return nreactors, 0
         else:
             # incorrect number of reactor (batch reactor is single reactor)
-            print(Color.PURPLE + f"** incorrect number of reactor = {self._nreactors}")
-            print("   batch reactor is single reactor model", end=Color.END)
-            return self._nreactors, 0
+            print(Color.PURPLE + f"** incorrect number of reactor = {nreactors}")
+            print(f"   the model expects {self._nreactors} reactor/zone", end=Color.END)
+            return nreactors, 0
 
     def processsolution(self):
         """
@@ -884,7 +886,7 @@ class BatchReactors(reactor):
         # get solution sizes
         nreac, npoints = self.getsolutionsize()
         # check values
-        if npoints == 0 or nreac != 1:
+        if npoints == 0 or nreac != self._nreactors:
             raise ValueError
         else:
             self._numbsolutionpoints = npoints
@@ -1100,6 +1102,7 @@ class GivenPressureBatchReactor_FixedTemperature(BatchReactors):
         self._problemtype = c_int(self.ProblemTypes.get("CONP"))
         self._energytype = c_int(self.EnergyTypes.get("GivenT"))
         # defaults for all closed homogeneous reactor models
+        self._nreactors = 1
         self._npsrs = c_int(1)
         self._ninlets = c_int(0)
         self._nzones = c_int(0)
@@ -1193,6 +1196,7 @@ class GivenPressureBatchReactor_EnergyConservation(BatchReactors):
         self._problemtype = c_int(self.ProblemTypes.get("CONP"))
         self._energytype = c_int(self.EnergyTypes.get("ENERGY"))
         # defaults for all closed homogeneous reactor models
+        self._nreactors = 1
         self._npsrs = c_int(1)
         self._ninlets = c_int(0)
         self._nzones = c_int(0)
@@ -1409,6 +1413,7 @@ class GivenVolumeBatchReactor_FixedTemperature(BatchReactors):
         self._problemtype = c_int(self.ProblemTypes.get("CONV"))
         self._energytype = c_int(self.EnergyTypes.get("GivenT"))
         # defaults for all closed homogeneous reactor models
+        self._nreactors = 1
         self._npsrs = c_int(1)
         self._ninlets = c_int(0)
         self._nzones = c_int(0)
@@ -1502,6 +1507,7 @@ class GivenVolumeBatchReactor_EnergyConservation(BatchReactors):
         self._problemtype = c_int(self.ProblemTypes.get("CONV"))
         self._energytype = c_int(self.EnergyTypes.get("ENERGY"))
         # defaults for all closed homogeneous reactor models
+        self._nreactors = 1
         self._npsrs = c_int(1)
         self._ninlets = c_int(0)
         self._nzones = c_int(0)

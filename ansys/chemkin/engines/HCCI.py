@@ -54,6 +54,9 @@ class HCCIengine(Engine):
         self.zonetemperature = []
         # zonal volume fractions
         self.zonevolume = []
+        # zonal mass fractions
+        self.usezonemass = False
+        self.zonemass = []
         # zonal wall heat transfer area fraction
         self.zoneHTarea = []
         # zonal gas compositions in mole fraction (for zonalsetupmode =1)
@@ -71,7 +74,7 @@ class HCCIengine(Engine):
         # zonal EGR ratios
         self.zoneEGRR = []
         # FORTRAN file unit of the text output file
-        self._myLOUT = c_int(55)
+        self._myLOUT = c_int(155)
         # set up basic HCCI engine model parameters
         iErr = chemkin_wrapper.chemkin.KINAll0D_Setup(
             self._chemset_index,
@@ -123,11 +126,14 @@ class HCCIengine(Engine):
         # set zonal temperatures
         for t in zonetemp:
             self.zonetemperature.append(t)
+        # set zonal definition mode
+        if self._zonalsetupmode == 0:
+            self._zonalsetupmode = 1
 
-    def setzonalvalume(self, zonevol):
+    def setzonalvolume(self, zonevol):
         """
         set zonal volume fractions for muti-zone HCCI engine simulation
-        :param zonearea: zonal volume fractions (list of doubles)
+        :param zonevol: zonal volume fractions (list of doubles)
         """
         nzones = self._nzones.value
         if len(zonevol) != nzones:
@@ -146,6 +152,29 @@ class HCCIengine(Engine):
         # set zonal volume fractions (will be normalized)
         for v in zonevol:
             self.zonevolume.append(v)
+
+    def setzonalmassfraction(self, zonemass):
+        """
+        set zonal mass fractions for muti-zone HCCI engine simulation
+        :param zonemass: zonal mass fractions (list of doubles)
+        """
+        nzones = self._nzones.value
+        if len(zonemass) != nzones:
+            print(
+                Color.PURPLE
+                + f"** zonal mass fraction must be a list of double/float of size {nzones}",
+                end=Color.END,
+            )
+            exit()
+
+        if len(self.zonemass) > 0:
+            print(Color.YELLOW + "** zonal mass farctions will be reset", end=Color.END)
+        self.zonemass = []
+        # set zonal mass fractions (will be normalized)
+        for v in zonemass:
+            self.zonemass.append(v)
+        # set flag
+        self.usezonemass = True
 
     def setzonalheattransferarea(self, zonearea):
         """
@@ -190,7 +219,6 @@ class HCCIengine(Engine):
                 + " to set up the zonal gas compositions",
                 end=Color.END,
             )
-            self._zonalsetupmode = 1
 
         if len(self.zonemolefrac) > 0:
             print(
@@ -198,6 +226,8 @@ class HCCIengine(Engine):
                 end=Color.END,
             )
         self.zonemolefrac = []
+        # set zonal definition mode
+        self._zonalsetupmode = 1
         # set zonal gas mole fractions
         for x in zonemolefrac:
             # x must be a double array of size = number of gas species
@@ -208,7 +238,7 @@ class HCCIengine(Engine):
         set the fuel composition for setting up zonal gas composition by zonal equivalence ratio
         :param recipe: list of tuples for (species, mole fraction) pairs
         """
-        if len(self.definefuel) > 0:
+        if len(self.zonefueldefined) > 0:
             print(
                 Color.YELLOW + "** previous fuel definition will be reset",
                 end=Color.END,
@@ -221,7 +251,7 @@ class HCCIengine(Engine):
         set the oxidizer composition for setting up zonal gas composition by zonal equivalence ratio
         :param recipe: list of tuples for (species, mole fraction) pairs
         """
-        if len(self.defineoxid) > 0:
+        if len(self.zoneoxiddefined) > 0:
             print(
                 Color.YELLOW + "** previous oxidizer definition will be reset",
                 end=Color.END,
@@ -234,13 +264,13 @@ class HCCIengine(Engine):
         set the complete combustion product species for setting up zonal gas composition by zonal equivalence ratio
         :param products: list of product species symbols
         """
-        if len(self.defineproduct) > 0:
+        if len(self.zoneproductdefined) > 0:
             print(
                 Color.YELLOW + "** previous product definition will be reset",
                 end=Color.END,
             )
         self.defineproduct = []
-        self.defineoxid = copy.deepcopy(products)
+        self.defineproduct = copy.deepcopy(products)
 
     def defineaddfractions(self, addfrac):
         """
@@ -252,7 +282,7 @@ class HCCIengine(Engine):
             print(
                 Color.PURPLE
                 + "** zonal additive gas mole fraction must be a list of "
-                + f" {nzones} double/float mole fraction arrays",
+                + f"{nzones} double/float mole fraction arrays",
                 end=Color.END,
             )
             exit()
@@ -289,7 +319,6 @@ class HCCIengine(Engine):
                 + " to set up the zonal gas compositions",
                 end=Color.END,
             )
-            self._zonalsetupmode = 2
 
         if len(self.zoneequivalenceratio) > 0:
             print(
@@ -297,6 +326,8 @@ class HCCIengine(Engine):
                 end=Color.END,
             )
         self.zoneequivalenceratio = []
+        # set zonal definition mode
+        self._zonalsetupmode = 2
         # set zonal equivalence ratio
         for p in zonephi:
             self.zoneequivalenceratio.append(p)
@@ -325,6 +356,65 @@ class HCCIengine(Engine):
         for r in zoneegr:
             self.zoneEGRR.append(r)
 
+    def setenergyequationswitchonCA(self, switchCA):
+        """
+        Set the crank angle at which the energy equation will be turn ON for
+        the rest of the simulation.
+        Before this switch crank angle the given temperature profile(s) or value(s)
+        is used in the multi-zone HCCI simulation.
+        :param switchCA: crank angle [degree] (double scalar)
+        """
+        if self._nzones.value == 1:
+            print(
+                Color.PURPLE
+                + "**  this parameter is for the multi-zone HCCI engine only",
+                end=Color.END,
+            )
+            return
+
+        if switchCA > self.IVCCA:
+            # set keyword
+            self.setkeyword(key="ASWH", value=switchCA)
+        else:
+            print(
+                Color.PURPLE + f"** energy switch on CA must > IVC {self.IVCCA}",
+                end=Color.END,
+            )
+
+    def setzonalvolumekeyword(self):
+        """
+        Set zonal volume keyword for the multi-zone HCCI engine simulation
+        """
+        for izone in range(self._nzones.value):
+            # set the zonal number string
+            addon = str(izone + 1)
+            # set zonal volume fraction
+            keyline = (
+                "VOL"
+                + Keyword.fourspaces
+                + str(self.zonevolume[izone])
+                + Keyword.fourspaces
+                + addon
+            )
+            self.setkeyword(key=keyline, value=True)
+
+    def setzonalmasskeyword(self):
+        """
+        Set zonal mass keyword for the multi-zone HCCI engine simulation
+        """
+        for izone in range(self._nzones.value):
+            # set the zonal number string
+            addon = str(izone + 1)
+            # set zonal volume fraction
+            keyline = (
+                "MZMAS"
+                + Keyword.fourspaces
+                + str(self.zonemass[izone])
+                + Keyword.fourspaces
+                + addon
+            )
+            self.setkeyword(key=keyline, value=True)
+
     def setzonalconditionkeywords(self):
         """
         Set zonal initial condition keywords under the Full-Keywords mode
@@ -341,7 +431,7 @@ class HCCIengine(Engine):
             return
 
         # set zonal pressure (same for all zones)
-        self.setkeyword(key="PRES", value=self._pressure / Patm)
+        self.setkeyword(key="PRES", value=self._pressure.value / Patm)
 
         if self._zonalsetupmode == 0:
             # set zonal setup mode to 'zonal species mole fraction'
@@ -358,15 +448,35 @@ class HCCIengine(Engine):
                 + addon
             )
             self.setkeyword(key=keyline, value=True)
-            # set zonal volume fraction
-            keyline = (
-                "VOL"
-                + Keyword.fourspaces
-                + str(self.zonevolume[izone])
-                + Keyword.fourspaces
-                + addon
-            )
-            self.setkeyword(key=keyline, value=True)
+            if self.usezonemass:
+                # set zonal mass fractions
+                keyline = (
+                    "MZMAS"
+                    + Keyword.fourspaces
+                    + str(self.zonemass[izone])
+                    + Keyword.fourspaces
+                    + addon
+                )
+                self.setkeyword(key=keyline, value=True)
+            else:
+                # set zonal volume fraction
+                if len(self.zonevolume) != self._nzones.value:
+                    # zonal volumes are not set
+                    # use equal zonal volume fractions
+                    volfrac = 1.0 / self._nzones.value
+                    self.zonevolume = []
+                    for i in range(self._nzones.value):
+                        self.zonevolume.append(volfrac)
+
+                keyline = (
+                    "VOL"
+                    + Keyword.fourspaces
+                    + str(self.zonevolume[izone])
+                    + Keyword.fourspaces
+                    + addon
+                )
+                self.setkeyword(key=keyline, value=True)
+
             if len(self.zoneHTarea) > 0:
                 # set zonal heat transfer area fraction
                 keyline = (
@@ -404,7 +514,7 @@ class HCCIengine(Engine):
             return
 
         # set zonal pressure (same for all zones)
-        self.setkeyword(key="PRES", value=self._pressure / Patm)
+        self.setkeyword(key="PRES", value=self._pressure.value / Patm)
 
         if self._zonalsetupmode == 0:
             # set zonal setup mode to 'zonal equivalence ratio'
@@ -421,15 +531,35 @@ class HCCIengine(Engine):
                 + addon
             )
             self.setkeyword(key=keyline, value=True)
-            # set zonal volume fraction
-            keyline = (
-                "VOL"
-                + Keyword.fourspaces
-                + str(self.zonevolume[izone])
-                + Keyword.fourspaces
-                + addon
-            )
-            self.setkeyword(key=keyline, value=True)
+            if self.usezonemass:
+                # set zonal mass fractions
+                keyline = (
+                    "MZMAS"
+                    + Keyword.fourspaces
+                    + str(self.zonemass[izone])
+                    + Keyword.fourspaces
+                    + addon
+                )
+                self.setkeyword(key=keyline, value=True)
+            else:
+                # set zonal volume fraction
+                if len(self.zonevolume) != self._nzones.value:
+                    # zonal volumes are not set
+                    # use equal zonal volume fractions
+                    volfrac = 1.0 / self._nzones.value
+                    self.zonevolume = []
+                    for i in range(self._nzones.value):
+                        self.zonevolume.append(volfrac)
+
+                keyline = (
+                    "VOL"
+                    + Keyword.fourspaces
+                    + str(self.zonevolume[izone])
+                    + Keyword.fourspaces
+                    + addon
+                )
+                self.setkeyword(key=keyline, value=True)
+
             if len(self.zoneHTarea) > 0:
                 # set zonal heat transfer area fraction
                 keyline = (
@@ -525,7 +655,7 @@ class HCCIengine(Engine):
                 self._heatlossrate,
                 Y_init,
             )
-            iErr = +iErrc
+            iErr += iErrc
 
         # set reactor type
         self.setreactortypekeywords()
@@ -540,10 +670,36 @@ class HCCIengine(Engine):
         if self._nzones.value == 1 or self._zonalsetupmode == 0:
             # single-zone HCCI engine initial condition or
             # multi-zone with uniform zonal properties
+            if self._nzones.value > 1:
+                if self.usezonemass:
+                    # set zonal mass fractions (required for the multi-zone model)
+                    self.setzonalmasskeyword()
+                else:
+                    if len(self.zonevolume) != self._nzones.value:
+                        # zonal volumes are not set
+                        # set uniform zonal volume fractions
+                        volfrac = 1.0 / self._nzones.value
+                        self.zonevolume = []
+                        for i in range(self._nzones.value):
+                            self.zonevolume.append(volfrac)
+                    # set zonal volume fractions (required for the multi-zone model)
+                    self.setzonalvolumekeyword()
+            # set uniform cylinder properties
             self.setengineconditionkeywords()
         else:
             # multi-zone HCCI engine zonal conditions
             if self._zonalsetupmode == 0:
+                if self.usezonemass:
+                    # set zonal mass fractions (required for the multi-zone model)
+                    self.setzonalmasskeyword()
+                else:
+                    if len(self.zonevolume) != self._nzones.value:
+                        # zonal volumes are not set
+                        # use equal zonal volume fractions
+                        volfrac = 1.0 / self._nzones.value
+                        self.zonevolume = []
+                        for i in range(self._nzones.value):
+                            self.zonevolume.append(volfrac)
                 # uniform zonal properties
                 self.setengineconditionkeywords()
             elif self._zonalsetupmode == 1:
@@ -635,7 +791,7 @@ class HCCIengine(Engine):
                 self._heatlossrate,
                 Y_init,
             )
-            iErr = +iErrc
+            iErr += iErrc
             # heat transfer (use additional keywords)
             # solver parameters (use additional keywords)
             # output controls (use additional keywords)

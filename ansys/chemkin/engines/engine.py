@@ -1,5 +1,5 @@
 import copy
-from ctypes import c_double
+from ctypes import c_double, c_int
 
 import numpy as np
 
@@ -480,6 +480,47 @@ class Engine(BatchReactors):
                 end=Color.END,
             )
 
+    def setminimumzonemass(self, minmass):
+        """
+        Set the minimum mass in a zone (for Spark Ignition and Direct Injection engine models)
+        the default value is 1.0e-6 [g]
+        :param minmass: minimum zonal mass [g] (double scalar)
+        """
+        if minmass > 0.0:
+            # set keyword
+            self.setkeyword(key="MLMT", value=minmass)
+        else:
+            print(Color.PURPLE + "** minimum zonal nmass must > 0.0", end=Color.END)
+            exit()
+
+    def setzonalgasratemultiplier(self, value=1.0e0, zoneID=None):
+        """
+        Set the value of the gas-phase reaction rate multiplier (optional)
+        default value = 1.0
+        :param value: gas-phase reaction rate multiplier (float scalar)
+        :return: None
+        """
+        if value < 0.0:
+            print(
+                Color.PURPLE + "** reaction rate multiplier must be >= 0",
+                end=Color.END,
+            )
+        else:
+            if zoneID is None:
+                self._gasratemultiplier = value
+                self.setkeyword(key="GFAC", value=value)
+            else:
+                # zonal GFAC
+                self._gasratemultiplier = value
+                keyphrase = (
+                    "GFAC"
+                    + Keyword.fourspaces
+                    + str(value)
+                    + Keyword.fourspaces
+                    + str(zoneID)
+                )
+                self.setkeyword(key=keyphrase, value=True)
+
     def setwallheatransfer(self, model, HTparameters, walltemperature):
         """
         Set cylinder wall heat transfer model and parameters
@@ -652,3 +693,156 @@ class Engine(BatchReactors):
             HR90 = c_double(0.0)
 
         return HR10.value, HR50.value, HR90.value
+
+    def getenginesolutionsize(self, expected):
+        """
+        Get the number of zones and the number of solution points
+        :param expected: expected number of zonal + mean solution records (integer scalar)
+        :return: nzones = number of zones, npoints = number of solution points (integer scalar, integer scalar)
+        """
+        # check run completion
+        status = self.getrunstatus(mode="silent")
+        if status == -100:
+            print(
+                Color.YELLOW + "** please run the reactor simulation first",
+                end=Color.END,
+            )
+            raise
+        elif status != 0:
+            print(Color.YELLOW + "** simulation was failed")
+            print(
+                "** please correct the error and rerun the reactor simulation",
+                end=Color.END,
+            )
+            raise
+        # number of zone
+        nzone = c_int(0)
+        # number of time points in the solution
+        npoints = c_int(0)
+        # get solution size of the batch reactor
+        iErr = chemkin_wrapper.chemkin.KINAll0D_GetSolnResponseSize(nzone, npoints)
+        nzones = nzone.value
+        if iErr == 0 and nzones == expected:
+            # return the solution sizes
+            self._numbsolutionpoints = (
+                npoints.value
+            )  # number of time points in the solution profile
+            return nzones, self._numbsolutionpoints
+        elif expected == nzones:
+            # fail to get solution sizes
+            print(
+                Color.PURPLE + f"** failed to get solution size, error code = {iErr}",
+                end=Color.END,
+            )
+            return nzones, 0
+        else:
+            # incorrect number of zones
+            print(Color.PURPLE + f"** incorrect number of zones = {nzones}")
+            print(f"   the model expects {expected} zones", end=Color.END)
+            return nzones, 0
+
+    def processenginesolution(self, zoneID=None):
+        """
+        Post-process solution to extract the raw solution variable data from
+        engine simulation results
+        :param zoneID: zone index (integer scalar)
+        """
+        # check existing raw data
+        if self.getrawsolutionstatus():
+            print(
+                Color.YELLOW
+                + "** solution has been processed before, existing solution data will be deleted",
+                end=Color.END,
+            )
+
+        if zoneID is None:
+            zoneID = 1
+
+        # reset raw and mixture solution parameters
+        self._numbsolutionpoints = 0
+        self._solution_rawarray.clear()
+        self._solution_mixturearray.clear()
+        # check values
+        if self._nreactors > 1:
+            expectedzones = self._nreactors + 1
+        else:
+            expectedzones = self._nreactors
+
+        if zoneID > expectedzones:
+            print(
+                Color.PURPLE
+                + f"** zone index must <= number of zones {self._nreactors}",
+                end=Color.END,
+            )
+            exit()
+        elif zoneID > self._nreactors:
+            print(Color.YELLOW + "** cylinder-average solution", end=Color.END)
+        elif self._nreactors > 1:
+            print(Color.YELLOW + f"** zone {zoneID} solution", end=Color.END)
+
+        # get solution sizes
+        nreac, npoints = self.getenginesolutionsize(expectedzones)
+
+        if npoints == 0 or nreac != expectedzones:
+            raise ValueError
+        else:
+            self._numbsolutionpoints = npoints
+        # create arrays to hold the raw solution data
+        time = np.zeros(self._numbsolutionpoints, dtype=np.double)
+        pres = np.zeros_like(time, dtype=np.double)
+        temp = np.zeros_like(time, dtype=np.double)
+        vol = np.zeros_like(time, dtype=np.double)
+        # create a species mass fraction array to hold the solution species fraction profiles
+        frac = np.zeros(
+            (
+                self.numbspecies,
+                self._numbsolutionpoints,
+            ),
+            dtype=np.double,
+            order="F",
+        )
+        # get raw solution data
+        icreac = c_int(zoneID)
+        icnpts = c_int(npoints)
+        icnspec = c_int(self.numbspecies)
+        iErr = chemkin_wrapper.chemkin.KINAll0D_GetGasSolnResponse(
+            icreac, icnpts, icnspec, time, temp, pres, vol, frac
+        )
+        if iErr != 0:
+            print(
+                Color.PURPLE
+                + f"** error: failed to fetch the raw solution data from memory, error code = {iErr}",
+                end=Color.END,
+            )
+            raise
+        # store the ratw solution data in a dictionary
+        # time
+        self._solution_rawarray["time"] = copy.deepcopy(time)
+        # temperature
+        self._solution_rawarray["temperature"] = copy.deepcopy(temp)
+        # pressure
+        self._solution_rawarray["pressure"] = copy.deepcopy(pres)
+        # volume
+        self._solution_rawarray["volume"] = copy.deepcopy(vol)
+        # species mass fractions
+        self.parsespeciessolutiondata(frac)
+        # create soolution mixture
+        iErr = self.createsolutionmixtures(frac)
+        if iErr != 0:
+            print(
+                Color.PURPLE + "** error: packaging solution mixtures",
+                end=Color.END,
+            )
+            raise
+        # clean up
+        del time, pres, temp, vol, frac
+
+    def processaverageenginesolution(self):
+        """
+        Post-process the ylinder averaged solution profiles from
+        multi-zone engine models
+        """
+        # set the cylinder averge solution record ("zone") index
+        meanzoneID = self._nreactors + 1
+        # post-process mean solution
+        self.processenginesolution(zoneID=meanzoneID)

@@ -492,7 +492,7 @@ class ReactorModel:
         # write text output file
         self._TextOut = True
         # FORTRAN file unit of the text output file
-        self._myLOUT = c_int(54)
+        self._myLOUT = c_int(154)
         # write XML solution file
         self._XMLOut = True
         # number of keywords used
