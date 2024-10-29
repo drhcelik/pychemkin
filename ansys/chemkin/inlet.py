@@ -21,6 +21,7 @@ class Inlet(Mixture):
         # 0=mass flow rate/1=volumetric flow rate/2=velocity/3=SCCM
         # flag
         self._flowratemode = -1  # not given
+        self._inletflowrate = [0.0] * 4
         # types of flow rate allowed
         self._massflowrate = 0.0  # mass flow rate FLRT [g/sec]
         self._volflowrate = 0.0  # volumetric flow rate VDOT [cm3/sec]
@@ -219,6 +220,7 @@ class Inlet(Mixture):
         self._SCCM = 0.0
         # set flow rate mode to mass flow rate
         self._flowratemode = 0
+        self._inletflowrate[self._flowratemode] = mflowrate
         self._massflowrate = mflowrate
 
     @property
@@ -247,6 +249,7 @@ class Inlet(Mixture):
         self._SCCM = 0.0
         # set flow rate mode to volumetric flow rate
         self._flowratemode = 1
+        self._inletflowrate[self._flowratemode] = vflowrate
         self._volflowrate = vflowrate
 
     @property
@@ -278,6 +281,7 @@ class Inlet(Mixture):
         self._velocity = 0.0
         # set flow rate mode to volumetric flow rate
         self._flowratemode = 3
+        self._inletflowrate[self._flowratemode] = vflowrate
         self._SCCM = vflowrate
 
     @property
@@ -321,6 +325,7 @@ class Inlet(Mixture):
         self._SCCM = 0.0
         # set flow rate mode to velocity
         self._flowratemode = 2
+        self._inletflowrate[self._flowratemode] = vel
         self._velocity = vel
 
     @property

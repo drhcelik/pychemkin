@@ -3,18 +3,19 @@ from ctypes import c_double, c_int
 
 import numpy as np
 
-from .. import chemkin_wrapper
-from ..batchreactors.batchreactor import BatchReactors
-from ..chemistry import Patm
-from ..color import Color as Color
-from ..reactormodel import Keyword
+from chemkin import chemkin_wrapper
+from chemkin.batchreactors.batchreactor import BatchReactors
+from chemkin.chemistry import Patm
+from chemkin.color import Color as Color
+from chemkin.reactormodel import Keyword
 
 
 class Engine(BatchReactors):
+    """
+    Common engine cylinder parameters used by Chemkin engine models
+    """
+
     def __init__(self, reactor_condition, label=None):
-        """
-        Common engine cylinder parameters used by Chemkin engine models
-        """
         super().__init__(reactor_condition, label)
         # engine parameters
         # stroke type

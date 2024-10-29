@@ -780,10 +780,10 @@ class Mixture:
                         Color.RED + f"** not a gas species: {sp:s}",
                         end=Color.END,
                     )
-                    return
+                    exit()
                 if x < 0.0:
                     print(Color.RED + "** negative mole fraction", end=Color.END)
-                    return
+                    exit()
                 # set mole fraction
                 self._molefrac[index] = x
         elif isinstance(recipe[0], (float, np.double)):
@@ -847,10 +847,10 @@ class Mixture:
                         Color.RED + f"** not a gas species: {sp:s}",
                         end=Color.END,
                     )
-                    return
+                    exit()
                 if y < 0.0:
                     print(Color.RED + "** negative mass fraction", end=Color.END)
-                    return
+                    exit()
                 # set mass fraction
                 self._massfrac[index] = y
         elif isinstance(recipe[0], (float, np.double)):

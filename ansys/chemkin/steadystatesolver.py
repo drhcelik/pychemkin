@@ -6,6 +6,10 @@ from .color import Color
 
 
 class steadystatesolver:
+    """
+    Common steady-state solver controlling parameters
+    """
+
     def __init__(self):
         # steady-state solver control parameter class
         # mostly just keyword processing

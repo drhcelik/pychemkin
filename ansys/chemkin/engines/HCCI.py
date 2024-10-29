@@ -4,16 +4,25 @@ import logging
 
 import numpy as np
 
-from .. import chemkin_wrapper
-from ..chemistry import Patm, checkchemistryset, chemistrysetinitialized, setverbose
-from ..color import Color as Color
-from ..reactormodel import Keyword
-from .engine import Engine
+from chemkin import chemkin_wrapper
+from chemkin.chemistry import (
+    Patm,
+    checkchemistryset,
+    chemistrysetinitialized,
+    setverbose,
+)
+from chemkin.color import Color as Color
+from chemkin.engines.engine import Engine
+from chemkin.reactormodel import Keyword
 
 logger = logging.getLogger(__name__)
 
 
 class HCCIengine(Engine):
+    """
+    Single or multi- zone homogeneous charge compression ignition (HCCI) engine
+    """
+
     def __init__(self, reactor_condition, label=None, nzones=None):
         """
         Single or multi- zone homogeneous charge compression ignition (HCCI) engine

@@ -73,7 +73,9 @@ class Keyword:
         "FPRO",
         "SCCMPRO",
         "VDOTPRO",
+        "VELPRO",
         "TINPRO",
+        "AFLO",
     ]
     fourspaces = "    "
     # Under the default API-call mode, important keywords (the _protectedkeywords) are set by direct API calls,

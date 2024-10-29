@@ -1051,6 +1051,12 @@ class Chemistry:
         """
         nn = ctypes.c_char_p(specname.encode())
         specindex = self._gas_species.get(nn.value, -1)
+        if specindex <= 0:
+            print(
+                Color.RED + f"** species symbol not found: {specname:s}",
+                end=Color.END,
+            )
+            exit()
         return specindex
 
     @property

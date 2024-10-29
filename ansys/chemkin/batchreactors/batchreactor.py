@@ -4,8 +4,8 @@ import logging
 
 import numpy as np
 
-from .. import chemkin_wrapper
-from ..chemistry import (
+from chemkin import chemkin_wrapper
+from chemkin.chemistry import (
     Patm,
     checkchemistryset,
     chemistrysetinitialized,
@@ -13,17 +13,17 @@ from ..chemistry import (
     setverbose,
     showignitiondefinition,
 )
-from ..color import Color as Color
-from ..mixture import interpolatemixtures
-from ..reactormodel import Keyword
-from ..reactormodel import ReactorModel as reactor
+from chemkin.color import Color as Color
+from chemkin.mixture import interpolatemixtures
+from chemkin.reactormodel import Keyword
+from chemkin.reactormodel import ReactorModel as reactor
 
 logger = logging.getLogger(__name__)
 
 
 class BatchReactors(reactor):
     """
-    Generic model of Chemkin 0D transient closed homogeneous reactor models
+    Generic model of Chemkin 0-D transient closed homogeneous reactor models
     """
 
     # set possible types in batch reactors
@@ -97,6 +97,12 @@ class BatchReactors(reactor):
             )
         else:
             self._reactivearea = c_double(value)
+            # set internal surface area keyword for PFR
+            if (
+                self._reactortype.value == self.ReactorTypes.get("PFR")
+                or Keyword.noFullKeyword
+            ):
+                self.setkeyword(key="AREA", value=value)
 
     @property
     def tolerances(self):
@@ -143,6 +149,32 @@ class BatchReactors(reactor):
         """
         # set keyword
         self.setkeyword(key="NNEG", value=mode)
+
+    def setsolverinitialtimestepsize(self, size):
+        """
+        Set the initial time step size to be used by the solver
+        :param size: step size [sec] or [cm]
+        """
+        if size > 0.0e0:
+            self.setkeyword(key="HO", value=size)
+        else:
+            print(
+                Color.PURPLE + "** solver timestep size must > 0",
+                end=Color.END,
+            )
+
+    def setsolvermaxtimestepsize(self, size):
+        """
+        Set the maximum time step size allowed by the solver
+        :param size: step size [sec] or [cm]
+        """
+        if size > 0.0e0:
+            self.setkeyword(key="STPT", value=size)
+        else:
+            print(
+                Color.PURPLE + "** solver timestep size must > 0",
+                end=Color.END,
+            )
 
     @property
     def timestepforsavingsolution(self):
@@ -463,25 +495,6 @@ class BatchReactors(reactor):
         keyword = "AINT"
         iErr = self.setprofile(key=keyword, x=x, y=area)
         return iErr
-
-    def setdiameterprofile(self, x, diam):
-        """
-        Specify plug-flow reactor diameter profile
-        :param x: position value of the profile data [cm or sec] (double array)
-        :param diam: PFR diameter value of the profile data [cm] (double array)
-        :return: error code (integer scalar)
-        """
-        if BatchReactors.ReactorTypes.get(self._reactortype.value) != "PFR":
-            print(
-                Color.PURPLE
-                + "** cannot specify reactor diameter of a non plug-flow reactor",
-                end=Color.END,
-            )
-            return 10
-        else:
-            keyword = "DPRO"
-            iErr = self.setprofile(key=keyword, x=x, y=diam)
-            return iErr
 
     def setreactortypekeywords(self):
         """
@@ -1086,7 +1099,7 @@ class BatchReactors(reactor):
 
 class GivenPressureBatchReactor_FixedTemperature(BatchReactors):
     """
-    Chemkin 0D transient closed homogeneous reactor model
+    Chemkin 0-D transient closed homogeneous reactor model
     with given reactor pressure (CONP) and reactor temperature (TGIV)
     """
 
@@ -1179,7 +1192,7 @@ class GivenPressureBatchReactor_FixedTemperature(BatchReactors):
 
 class GivenPressureBatchReactor_EnergyConservation(BatchReactors):
     """
-    Chemkin 0D transient closed homogeneous reactor model
+    Chemkin 0-D transient closed homogeneous reactor model
     with given reactor pressure (CONP) and
     solving the energy equation (ENRG)
     """
@@ -1397,7 +1410,7 @@ class GivenPressureBatchReactor_EnergyConservation(BatchReactors):
 
 class GivenVolumeBatchReactor_FixedTemperature(BatchReactors):
     """
-    Chemkin 0D transient closed homogeneous reactor model
+    Chemkin 0-D transient closed homogeneous reactor model
     with given reactor volume (CONV) and reactor temperature (TGIV)
     """
 
@@ -1490,7 +1503,7 @@ class GivenVolumeBatchReactor_FixedTemperature(BatchReactors):
 
 class GivenVolumeBatchReactor_EnergyConservation(BatchReactors):
     """
-    Chemkin 0D transient closed homogeneous reactor model
+    Chemkin 0-D transient closed homogeneous reactor model
     with given reactor volume (CONV) and
     solving the energy equation (ENRG)
     """

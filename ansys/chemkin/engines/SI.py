@@ -2,20 +2,21 @@ import copy
 from ctypes import c_double, c_int
 import logging
 
-from .. import chemkin_wrapper
-from ..chemistry import checkchemistryset, chemistrysetinitialized, setverbose
-from ..color import Color as Color
-from ..reactormodel import Keyword
-from .engine import Engine
+from chemkin import chemkin_wrapper
+from chemkin.chemistry import checkchemistryset, chemistrysetinitialized, setverbose
+from chemkin.color import Color as Color
+from chemkin.engines.engine import Engine
+from chemkin.reactormodel import Keyword
 
 logger = logging.getLogger(__name__)
 
 
 class SIengine(Engine):
+    """
+    Spark Ignition (SI) engine model
+    """
+
     def __init__(self, reactor_condition, label=None):
-        """
-        Spark Ignition (SI) engine
-        """
         # set default number of zone(s)
         # 2 zones: the unburned and the burned zones
         nzones = 2
