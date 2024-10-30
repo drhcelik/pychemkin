@@ -6,7 +6,7 @@ Tutorials
 - `Getting Mixture Properties`_
 - `Computing Reaction Rates`_
 - `Combining Mixtures`_
-- `Adaiabatic Flame Temperatures`_
+- `Adiabatic Flame Temperatures`_
 - `Detonation Wave Speed`_
 - `Rapid Compression Machine`_
 - `Ignition Delay Time`_

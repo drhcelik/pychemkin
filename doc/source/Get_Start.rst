@@ -78,7 +78,7 @@ Getting Started
          mech_file = mech_dir+'\\grimech30_chem.inp'
          therm_file = mech_dir+'\\grimech30_thermo.dat'
          tran_file = mech_dir+'\\grimech30_transport.dat'
-         # instantiate Chenistry Set 'GasMech'
+         # instantiate Chemistry Set 'GasMech'
          GasMech = chemkin.Chemistry(chem=mech_file, therm=therm_file,  tran=tran_file,  label='GRI 3.0')
          # pre-process the Chemistry Set
          status = GasMech.preprocess()

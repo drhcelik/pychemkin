@@ -1,6 +1,7 @@
 import os
 
 import chemkin as ck  # Chemkin
+from chemkin import Color
 
 # check working directory
 current_dir = os.getcwd()
@@ -25,7 +26,7 @@ if iError != 0:
     print(f"see the summary file {MyGasMech.summaryfile} for details")
     exit()
 else:
-    print(ck.Color.GREEN + "PreProcess success!!", end="\n" + ck.Color.END)
+    print(Color.GREEN + "PreProcess success!!", end=Color.END)
     print("mechanism information:")
     print(f"number of elements = {MyGasMech.MM:d}")
     print(f"number of gas species = {MyGasMech.KK:d}")
@@ -72,7 +73,7 @@ if iError != 0:
     print(f"see the summary file {My2ndMech.summaryfile} for details")
     exit()
 else:
-    print(ck.Color.GREEN + "PreProcess success!!", end="\n" + ck.Color.END)
+    print(Color.GREEN + "PreProcess success!!", end=Color.END)
     print("mechanism information:")
     print(f"number of elements = {My2ndMech.MM:d}")
     print(f"number of gas species = {My2ndMech.KK:d}")

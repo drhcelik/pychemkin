@@ -4,27 +4,29 @@ import logging
 
 import numpy as np
 
-from .. import chemkin_wrapper
-from ..chemistry import (
+from chemkin import chemkin_wrapper
+from chemkin.chemistry import (
+    Patm,
     checkchemistryset,
     chemistrysetinitialized,
     findinterpolateparameters,
     setverbose,
     showignitiondefinition,
 )
-from ..color import Color as Color
-from ..mixture import interpolatemixtures
-from ..reactormodel import Keyword
-from ..reactormodel import ReactorModel as reactor
+from chemkin.color import Color as Color
+from chemkin.mixture import interpolatemixtures
+from chemkin.reactormodel import Keyword
+from chemkin.reactormodel import ReactorModel as reactor
 
 logger = logging.getLogger(__name__)
 
 
 class BatchReactors(reactor):
     """
-    Generic model of Chemkin 0D transient closed homogeneous reactor models
+    Generic model of Chemkin 0-D transient closed homogeneous reactor models
     """
 
+    # set possible types in batch reactors
     ReactorTypes = {"Batch": 1, "PSR": 2, "PFR": 3, "HCCI": 4, "SI": 5, "DI": 6}
     SolverTypes = {"Transient": 1, "SteadyState": 2}
     EnergyTypes = {"ENERGY": 1, "GivenT": 2}
@@ -33,12 +35,7 @@ class BatchReactors(reactor):
     def __init__(self, reactor_condition, label):
         # initialize the base module
         super().__init__(reactor_condition, label)
-        # set default reactor type
-        self._reactortype = c_int(self.ReactorTypes.get("Batch"))
-        self._solvertype = c_int(self.SolverTypes.get("Transient"))
-        self._problemtype = c_int(self.ProblemTypes.get("CONP"))
-        self._energytype = c_int(self.EnergyTypes.get("ENERGY"))
-        self._nreactors = 1
+        #
         # reactor parameters (required)
         self._volume = c_double(0.0e0)
         self._endtime = c_double(0.0e0)
@@ -52,6 +49,8 @@ class BatchReactors(reactor):
         self._numb_requiredinput = 0
         self._requiredlist = []
         self._inputcheck = []
+        # default number of reactors
+        self._nreactors = 1
 
     @property
     def volume(self):
@@ -75,7 +74,7 @@ class BatchReactors(reactor):
             # set volume keyword (not set by the setup calls)
             self.setkeyword(key="VOL", value=value)
         else:
-            print(Color.PURPLE + "** reactor volume must be > 0", end="\n" + Color.END)
+            print(Color.PURPLE + "** reactor volume must be > 0", end=Color.END)
 
     @property
     def area(self):
@@ -94,10 +93,16 @@ class BatchReactors(reactor):
         if value < 0.0e0:
             print(
                 Color.PURPLE + "** reactor reactive area must be >= 0",
-                end="\n" + Color.END,
+                end=Color.END,
             )
         else:
             self._reactivearea = c_double(value)
+            # set internal surface area keyword for PFR
+            if (
+                self._reactortype.value == self.ReactorTypes.get("PFR")
+                or Keyword.noFullKeyword
+            ):
+                self.setkeyword(key="AREA", value=value)
 
     @property
     def tolerances(self):
@@ -145,6 +150,32 @@ class BatchReactors(reactor):
         # set keyword
         self.setkeyword(key="NNEG", value=mode)
 
+    def setsolverinitialtimestepsize(self, size):
+        """
+        Set the initial time step size to be used by the solver
+        :param size: step size [sec] or [cm]
+        """
+        if size > 0.0e0:
+            self.setkeyword(key="HO", value=size)
+        else:
+            print(
+                Color.PURPLE + "** solver timestep size must > 0",
+                end=Color.END,
+            )
+
+    def setsolvermaxtimestepsize(self, size):
+        """
+        Set the maximum time step size allowed by the solver
+        :param size: step size [sec] or [cm]
+        """
+        if size > 0.0e0:
+            self.setkeyword(key="STPT", value=size)
+        else:
+            print(
+                Color.PURPLE + "** solver timestep size must > 0",
+                end=Color.END,
+            )
+
     @property
     def timestepforsavingsolution(self):
         """
@@ -163,7 +194,7 @@ class BatchReactors(reactor):
                 print(
                     Color.YELLOW
                     + "** solution saving timestep is not defined because 'end time' is not set",
-                    end="\n" + Color.END,
+                    end=Color.END,
                 )
                 return 0.0
 
@@ -178,7 +209,7 @@ class BatchReactors(reactor):
         else:
             print(
                 Color.PURPLE + "** solution saving timestep value must > 0",
-                end="\n" + Color.END,
+                end=Color.END,
             )
 
     @property
@@ -199,7 +230,7 @@ class BatchReactors(reactor):
                 print(
                     Color.YELLOW
                     + "** solution printing timestep is not defined because 'end time' is not set",
-                    end="\n" + Color.END,
+                    end=Color.END,
                 )
                 return 0.0
 
@@ -214,7 +245,7 @@ class BatchReactors(reactor):
         else:
             print(
                 Color.PURPLE + "** solution printing timestep value must > 0",
-                end="\n" + Color.END,
+                end=Color.END,
             )
 
     def adaptivesolutionsaving(self, mode, value_change=None, target=None, steps=None):
@@ -237,7 +268,7 @@ class BatchReactors(reactor):
                 print(
                     Color.PURPLE
                     + "** the number of steps per adaptive solution saving must be > 0 ",
-                    end="\n" + Color.END,
+                    end=Color.END,
                 )
             else:
                 # set parameters
@@ -250,21 +281,21 @@ class BatchReactors(reactor):
                 print(
                     Color.PURPLE
                     + "** a reference variable is required for value-change adaptive saving",
-                    end="\n" + Color.END,
+                    end=Color.END,
                 )
             elif not isinstance(target, str):
                 # not given as string
                 print(
                     Color.PURPLE
                     + "** a reference variable is assigned as a string, e.g., 'OH' ",
-                    end="\n" + Color.END,
+                    end=Color.END,
                 )
             elif value_change <= 0.0:
                 # non-positive change value
                 print(
                     Color.PURPLE
                     + "** the value change per adaptive solution saving must be > 0 ",
-                    end="\n" + Color.END,
+                    end=Color.END,
                 )
             else:
                 # set parameters
@@ -276,7 +307,7 @@ class BatchReactors(reactor):
             print(
                 Color.PURPLE
                 + "** need to specify either the number of steps or the <change value>-<target variable> pair",
-                end="\n" + Color.END,
+                end=Color.END,
             )
 
     def setignitiondelay(self, method=None, val=None, target=None):
@@ -300,7 +331,7 @@ class BatchReactors(reactor):
                 if val <= 0.0:
                     print(
                         Color.PURPLE + "** temperature rise must be > 0 ",
-                        end="\n" + Color.END,
+                        end=Color.END,
                     )
                 else:
                     self.setkeyword(key="DTIGN", value=val)
@@ -309,7 +340,7 @@ class BatchReactors(reactor):
                 if val <= 0.0:
                     print(
                         Color.PURPLE + "** ignition temperature must be > 0 ",
-                        end="\n" + Color.END,
+                        end=Color.END,
                     )
                 else:
                     self.setkeyword(key="TLIM", value=val)
@@ -320,7 +351,7 @@ class BatchReactors(reactor):
                     print(
                         Color.PURPLE
                         + "** target species is assigned as a string, e.g., 'OH' ",
-                        end="\n" + Color.END,
+                        end=Color.END,
                     )
                 else:
                     self.setkeyword(key="KLIM", value=target)
@@ -329,7 +360,7 @@ class BatchReactors(reactor):
                 print(
                     Color.PURPLE
                     + f"** ignition definition specified {method:s} is not recognized",
-                    end="\n" + Color.END,
+                    end=Color.END,
                 )
                 showignitiondefinition()
         else:
@@ -356,14 +387,14 @@ class BatchReactors(reactor):
         if status == -100:
             print(
                 Color.YELLOW + "** please run the reactor simulation first",
-                end="\n" + Color.END,
+                end=Color.END,
             )
             return ignitiondelaytime.value
         elif status != 0:
             print(Color.YELLOW + "** simulation was failed")
             print(
                 "** please correct the error and rerun the reactor simulation",
-                end="\n" + Color.END,
+                end=Color.END,
             )
             return ignitiondelaytime.value
 
@@ -373,25 +404,42 @@ class BatchReactors(reactor):
             print(Color.PURPLE + "** potential bad ignition delay time value")
             print(
                 "** please check the run status and revisit the reactor settings",
-                end="\n" + Color.END,
+                end=Color.END,
             )
         # check reactor model
         if self._reactortype.value == self.ReactorTypes.get("Batch"):
-            # check ignition  delay time value
+            # check ignition delay time value
             if ignitiondelaytime.value <= 0.0:
                 print(Color.PURPLE + "** potential bad ignition delay time value")
                 print(
                     "** please check the run status and revisit the reactor settings",
-                    end="\n" + Color.END,
+                    end=Color.END,
                 )
                 return ignitiondelaytime.value
             else:
                 # convert ignition  delay time from [sec] to [msec]
                 return ignitiondelaytime.value * 1.0e3
-        else:
+        elif self._reactortype.value in [
+            self.ReactorTypes.get("HCCI"),
+            self.ReactorTypes.get("SI"),
+            self.ReactorTypes.get("DI"),
+        ]:
             # engine models
-            print(Color.YELLOW + "** ignition delay time in CA", end="\n" + Color.END)
+            print(Color.YELLOW + "** mean ignition delay time in CA", end=Color.END)
             return ignitiondelaytime.value
+        elif self._reactortype.value == self.ReactorTypes.get("PFR"):
+            print(Color.YELLOW + "** ignition delay in [cm]", end=Color.END)
+            # check ignition distance value
+            if ignitiondelaytime.value <= 0.0:
+                print(Color.PURPLE + "** potential bad ignition distance value")
+                print(
+                    "** please check the run status and revisit the reactor settings",
+                    end=Color.END,
+                )
+                return ignitiondelaytime.value
+            else:
+                # return ignition distance [cm]
+                return ignitiondelaytime.value
 
     def setvolumeprofile(self, x, vol):
         """
@@ -407,7 +455,7 @@ class BatchReactors(reactor):
             print(
                 Color.PURPLE
                 + "** cannot constrain volume of a given pressure fixed temperature batch reactor",
-                end="\n" + Color.END,
+                end=Color.END,
             )
             return 10
         else:
@@ -429,7 +477,7 @@ class BatchReactors(reactor):
             print(
                 Color.PURPLE
                 + "** cannot constrain pressure of a given volume fixed temperature batch reactor",
-                end="\n" + Color.END,
+                end=Color.END,
             )
             return 10
         else:
@@ -448,25 +496,6 @@ class BatchReactors(reactor):
         iErr = self.setprofile(key=keyword, x=x, y=area)
         return iErr
 
-    def setdiameterprofile(self, x, diam):
-        """
-        Specify plug-flow reactor diameter profile
-        :param x: position value of the profile data [cm or sec] (double array)
-        :param diam: PFR diameter value of the profile data [cm] (double array)
-        :return: error code (integer scalar)
-        """
-        if BatchReactors.ReactorTypes.get(self._reactortype.value) != "PFR":
-            print(
-                Color.PURPLE
-                + "** cannot specify reactor diameter of a non plug-flow reactor",
-                end="\n" + Color.END,
-            )
-            return 10
-        else:
-            keyword = "DPRO"
-            iErr = self.setprofile(key=keyword, x=x, y=diam)
-            return iErr
-
     def setreactortypekeywords(self):
         """
         Set reactor type keywords under the Full-Keywords mode
@@ -474,35 +503,35 @@ class BatchReactors(reactor):
         """
         # keyword headers
         # set solver types
-        if self._solvertype.value == 1:
+        if self._solvertype.value == self.SolverTypes.get("Transient"):
             self.setkeyword(key="TRAN", value=True)
         else:
             self.setkeyword(key="STST", value=True)
         # set reactor related keywords
-        if self._reactortype.value == 1:
+        if self._reactortype.value == self.ReactorTypes.get("Batch"):
             # batch reactors
             # set problem type
-            if self._problemtype.value == 1:
+            if self._problemtype.value == self.ProblemTypes.get("CONP"):
                 self.setkeyword(key="CONP", value=True)
             else:
                 self.setkeyword(key="CONV", value=True)
             # set energy equation
-            if self._energytype.value == 1:
+            if self._energytype.value == self.EnergyTypes.get("ENERGY"):
                 self.setkeyword(key="ENRG", value=True)
             else:
                 self.setkeyword(key="TGIV", value=True)
-        elif self._reactortype.value == 2:
+        elif self._reactortype.value == self.ReactorTypes.get("PSR"):
             # PSR
             # set energy equation
-            if self._energytype.value == 1:
+            if self._energytype.value == self.EnergyTypes.get("ENERGY"):
                 self.setkeyword(key="ENRG", value=True)
             else:
                 self.setkeyword(key="TGIV", value=True)
-        elif self._reactortype.value == 3:
+        elif self._reactortype.value == self.ReactorTypes.get("PFR"):
             # PFR
             self.setkeyword(key="PLUG", value=True)
             # set energy equation
-            if self._energytype.value == 1:
+            if self._energytype.value == self.EnergyTypes.get("ENERGY"):
                 self.setkeyword(key="ENRG", value=True)
             else:
                 self.setkeyword(key="TGIV", value=True)
@@ -523,7 +552,7 @@ class BatchReactors(reactor):
         self.setkeyword(key="TIME", value=self._endtime.value)
         # initial mole fraction
         nspecieslines, species_lines = self.createspeciesinputlines(
-            self._solvertype.value
+            self._solvertype.value, threshold=1.0e-12, molefrac=self.reactormixture.X
         )
         for line in species_lines:
             self.setkeyword(key=line, value=True)
@@ -538,7 +567,7 @@ class BatchReactors(reactor):
             if len(self._inputcheck) < self._numb_requiredinput:
                 print(
                     Color.PURPLE + "** some required inputs are missing",
-                    end="\n" + Color.END,
+                    end=Color.END,
                 )
             # verify required inputs one by one
             for k in self._requiredlist:
@@ -546,7 +575,7 @@ class BatchReactors(reactor):
                     iErr += 1
                     print(
                         Color.RED + f"** missing required input '{k:s}'",
-                        end="\n" + Color.END,
+                        end=Color.END,
                     )
             return iErr
 
@@ -562,7 +591,7 @@ class BatchReactors(reactor):
         if iErr != 0:
             print(
                 Color.PURPLE + "** missing required input variable",
-                end="\n" + Color.END,
+                end=Color.END,
             )
             return iErr
         # prepare initial conditions
@@ -573,7 +602,7 @@ class BatchReactors(reactor):
         # bulk activities (not applicable)
         Bulk_init = np.zeros_like(Site_init, dtype=np.double)
         # set reactor initial conditions and geometry parameters
-        if self._reactortype.value == 1:
+        if self._reactortype.value == self.ReactorTypes.get("Batch"):
             iErrc = chemkin_wrapper.chemkin.KINAll0D_SetupBatchInputs(
                 self._chemset_index,
                 self._endtime,
@@ -586,7 +615,7 @@ class BatchReactors(reactor):
                 Site_init,
                 Bulk_init,
             )
-            iErr = +iErrc
+            iErr += iErrc
 
         # set reactor type
         self.setreactortypekeywords()
@@ -607,9 +636,7 @@ class BatchReactors(reactor):
         self.setkeyword(key="END", value=True)
         # create input lines from additional user-specified keywords
         iErr, nlines = self.createkeywordinputlines()
-        print(
-            Color.YELLOW + f"** {nlines} input lines are created", end="\n" + Color.END
-        )
+        print(Color.YELLOW + f"** {nlines} input lines are created", end=Color.END)
 
         return iErr
 
@@ -652,7 +679,7 @@ class BatchReactors(reactor):
         if iErr != 0:
             print(
                 Color.PURPLE + "** missing required input variable",
-                end="\n" + Color.END,
+                end=Color.END,
             )
             return iErr
         # prepare initial conditions
@@ -663,7 +690,7 @@ class BatchReactors(reactor):
         # bulk activities (not applicable)
         Bulk_init = np.zeros_like(Site_init, dtype=np.double)
         # set reactor initial conditions and geometry parameters
-        if self._reactortype.value == 1:
+        if self._reactortype.value == self.ReactorTypes.get("Batch"):
             iErrc = chemkin_wrapper.chemkin.KINAll0D_SetupBatchInputs(
                 self._chemset_index,
                 self._endtime,
@@ -676,7 +703,7 @@ class BatchReactors(reactor):
                 Site_init,
                 Bulk_init,
             )
-            iErr = +iErrc
+            iErr += iErrc
             # heat transfer (use additional keywords)
             # solver parameters (use additional keywords)
             # output controls (use additional keywords)
@@ -704,7 +731,7 @@ class BatchReactors(reactor):
             iErrInputs, nlines = self.createkeywordinputlines()
             print(
                 Color.YELLOW + f"** {nlines} additional keywords are created",
-                end="\n" + Color.END,
+                end=Color.END,
             )
             if iErrInputs == 0:
                 # process additional keywords in _keyword_index and _keyword_lines
@@ -717,7 +744,7 @@ class BatchReactors(reactor):
                 print(
                     Color.RED
                     + "** error processing additional keywords. error code = {iErrInputs}",
-                    end="\n" + Color.END,
+                    end=Color.END,
                 )
         #
         iErr = iErr + iErrInputs + iErrKey
@@ -746,18 +773,18 @@ class BatchReactors(reactor):
         )
         print(
             f"   initialization = {checkchemistryset(self._chemset_index.value)}",
-            end="\n" + Color.END,
+            end=Color.END,
         )
         if not checkchemistryset(self._chemset_index.value):
             # KINetics is not initialized: reinitialize KINetics
-            print(Color.YELLOW + "** initializing chemkin...", end="\n" + Color.END)
+            print(Color.YELLOW + "** initializing chemkin...", end=Color.END)
             retVal = chemkin_wrapper.chemkin.KINInitialize(
                 self._chemset_index, c_int(0)
             )
             if retVal != 0:
                 print(
                     Color.RED + f"** error processing the keywords (code = {retVal:d})",
-                    end="\n" + Color.END,
+                    end=Color.END,
                 )
                 logger.debug(f"Initializing KINetics failed (code={retVal})")
                 return retVal
@@ -773,7 +800,7 @@ class BatchReactors(reactor):
 
         # keyword processing
         logger.debug("Processing keywords")
-        print(Color.YELLOW + "** processing keywords", end="\n" + Color.END)
+        print(Color.YELLOW + "** processing keywords", end=Color.END)
         if Keyword.noFullKeyword:
             # use API calls
             retVal = (
@@ -785,7 +812,7 @@ class BatchReactors(reactor):
         if retVal != 0:
             print(
                 Color.RED + f"** error processing the keywords (code = {retVal:d})",
-                end="\n" + Color.END,
+                end=Color.END,
             )
             logger.debug(f"Processing keywords failed (code={retVal})")
             return retVal
@@ -793,7 +820,7 @@ class BatchReactors(reactor):
 
         # run reactor model
         logger.debug("Running model")
-        print(Color.YELLOW + "** running model", end="\n" + Color.END)
+        print(Color.YELLOW + "** running model", end=Color.END)
         if Keyword.noFullKeyword:
             # use API calls
             retVal = self.__run_model(**kwargs)
@@ -817,14 +844,14 @@ class BatchReactors(reactor):
         if status == -100:
             print(
                 Color.YELLOW + "** please run the reactor simulation first",
-                end="\n" + Color.END,
+                end=Color.END,
             )
             raise
         elif status != 0:
             print(Color.YELLOW + "** simulation was failed")
             print(
                 "** please correct the error and rerun the reactor simulation",
-                end="\n" + Color.END,
+                end=Color.END,
             )
             raise
         # number of reactor
@@ -833,25 +860,25 @@ class BatchReactors(reactor):
         npoints = c_int(0)
         # get solution size of the batch reactor
         iErr = chemkin_wrapper.chemkin.KINAll0D_GetSolnResponseSize(nreac, npoints)
-        self._nreactors = nreac.value
-        if iErr == 0 and self._nreactors == 1:
+        nreactors = nreac.value
+        if iErr == 0 and nreactors == self._nreactors:
             # return the solution sizes
             self._numbsolutionpoints = (
                 npoints.value
             )  # number of time points in the solution profile
             return self._nreactors, self._numbsolutionpoints
-        elif self._nreactors == 1:
+        elif self._nreactors == nreactors:
             # fail to get solution sizes
             print(
                 Color.PURPLE + f"** failed to get solution size, error code = {iErr}",
-                end="\n" + Color.END,
+                end=Color.END,
             )
-            return self._nreactors, 0
+            return nreactors, 0
         else:
             # incorrect number of reactor (batch reactor is single reactor)
-            print(Color.PURPLE + f"** incorrect number of reactor = {self._nreactors}")
-            print("   batch reactor is single reactor model", end="\n" + Color.END)
-            return self._nreactors, 0
+            print(Color.PURPLE + f"** incorrect number of reactor = {nreactors}")
+            print(f"   the model expects {self._nreactors} reactor/zone", end=Color.END)
+            return nreactors, 0
 
     def processsolution(self):
         """
@@ -862,7 +889,7 @@ class BatchReactors(reactor):
             print(
                 Color.YELLOW
                 + "** solution has been processed before, existing solution data will be deleted",
-                end="\n" + Color.END,
+                end=Color.END,
             )
 
         # reset raw and mixture solution parameters
@@ -872,7 +899,7 @@ class BatchReactors(reactor):
         # get solution sizes
         nreac, npoints = self.getsolutionsize()
         # check values
-        if npoints == 0 or nreac != 1:
+        if npoints == 0 or nreac != self._nreactors:
             raise ValueError
         else:
             self._numbsolutionpoints = npoints
@@ -901,7 +928,7 @@ class BatchReactors(reactor):
             print(
                 Color.PURPLE
                 + f"** error: failed to fetch the raw solution data from memory, error code = {iErr}",
-                end="\n" + Color.END,
+                end=Color.END,
             )
             raise
         # store the ratw solution data in a dictionary
@@ -920,7 +947,7 @@ class BatchReactors(reactor):
         if iErr != 0:
             print(
                 Color.PURPLE + "** error: packaging solution mixtures",
-                end="\n" + Color.END,
+                end=Color.END,
             )
             raise
         # clean up
@@ -1016,7 +1043,7 @@ class BatchReactors(reactor):
             print(
                 Color.YELLOW
                 + "** error: use processsolution first to process the raw solution data",
-                end="\n" + Color.END,
+                end=Color.END,
             )
             raise
         # get the time point array
@@ -1054,7 +1081,7 @@ class BatchReactors(reactor):
             print(
                 Color.YELLOW
                 + "** error: use processsolution first to process the raw solution data",
-                end="\n" + Color.END,
+                end=Color.END,
             )
             raise
         # check index
@@ -1063,7 +1090,7 @@ class BatchReactors(reactor):
                 Color.PURPLE
                 + f"** error: the given index {solution_index} > the max time points index {self._numbsolutionpoints-1}"
             )
-            print("   the solution index is 0-based", end="\n" + Color.END)
+            print("   the solution index is 0-based", end=Color.END)
             raise
         # get the mixture
         mixturetarget = copy.deepcopy(self._solution_mixturearray[solution_index])
@@ -1072,7 +1099,7 @@ class BatchReactors(reactor):
 
 class GivenPressureBatchReactor_FixedTemperature(BatchReactors):
     """
-    Chemkin 0D transient closed homogeneous reactor model
+    Chemkin 0-D transient closed homogeneous reactor model
     with given reactor pressure (CONP) and reactor temperature (TGIV)
     """
 
@@ -1088,6 +1115,7 @@ class GivenPressureBatchReactor_FixedTemperature(BatchReactors):
         self._problemtype = c_int(self.ProblemTypes.get("CONP"))
         self._energytype = c_int(self.EnergyTypes.get("GivenT"))
         # defaults for all closed homogeneous reactor models
+        self._nreactors = 1
         self._npsrs = c_int(1)
         self._ninlets = c_int(0)
         self._nzones = c_int(0)
@@ -1120,7 +1148,8 @@ class GivenPressureBatchReactor_FixedTemperature(BatchReactors):
             print(
                 Color.RED + f"** error initializing the reactor model: {self.label:s}"
             )
-            print(f"   error code = {iErr:d}", end="\n" + Color.END)
+            print(f"   error code = {iErr:d}", end=Color.END)
+            exit()
         # if full-keyword mode is turned ON
         if not Keyword.noFullKeyword:
             # populate the reactor setup keywords
@@ -1143,7 +1172,7 @@ class GivenPressureBatchReactor_FixedTemperature(BatchReactors):
         if value <= 0.0e0:
             print(
                 Color.PURPLE + "** simulation end time must be > 0",
-                end="\n" + Color.END,
+                end=Color.END,
             )
         else:
             self._inputcheck.append("TIME")
@@ -1163,12 +1192,12 @@ class GivenPressureBatchReactor_FixedTemperature(BatchReactors):
 
 class GivenPressureBatchReactor_EnergyConservation(BatchReactors):
     """
-    Chemkin 0D transient closed homogeneous reactor model
+    Chemkin 0-D transient closed homogeneous reactor model
     with given reactor pressure (CONP) and
     solving the energy equation (ENRG)
     """
 
-    def __init__(self, reactor_condition, label=""):
+    def __init__(self, reactor_condition, label=None):
         # set default label
         if label is None:
             label = "CONP"
@@ -1180,6 +1209,7 @@ class GivenPressureBatchReactor_EnergyConservation(BatchReactors):
         self._problemtype = c_int(self.ProblemTypes.get("CONP"))
         self._energytype = c_int(self.EnergyTypes.get("ENERGY"))
         # defaults for all closed homogeneous reactor models
+        self._nreactors = 1
         self._npsrs = c_int(1)
         self._ninlets = c_int(0)
         self._nzones = c_int(0)
@@ -1215,7 +1245,8 @@ class GivenPressureBatchReactor_EnergyConservation(BatchReactors):
             print(
                 Color.RED + f"** error initializing the reactor model: {self.label:s}"
             )
-            print(f"   error code = {iErr:d}", end="\n" + Color.END)
+            print(f"   error code = {iErr:d}", end=Color.END)
+            exit()
         # if full-keyword mode is turned ON
         if not Keyword.noFullKeyword:
             # populate the reactor setup keywords
@@ -1238,7 +1269,7 @@ class GivenPressureBatchReactor_EnergyConservation(BatchReactors):
         if value <= 0.0e0:
             print(
                 Color.PURPLE + "** simulation end time must be > 0",
-                end="\n" + Color.END,
+                end=Color.END,
             )
         else:
             self._inputcheck.append("TIME")
@@ -1281,7 +1312,7 @@ class GivenPressureBatchReactor_EnergyConservation(BatchReactors):
         if value < 0.0e0:
             print(
                 Color.PURPLE + "** simulation end time must be >= 0",
-                end="\n" + Color.END,
+                end=Color.END,
             )
         else:
             self._heattransfercoefficient = value
@@ -1306,7 +1337,7 @@ class GivenPressureBatchReactor_EnergyConservation(BatchReactors):
         if value <= 0.0e0:
             print(
                 Color.PURPLE + "** ambient temperature must be > 0",
-                end="\n" + Color.END,
+                end=Color.END,
             )
         else:
             self._ambienttemperature = value
@@ -1331,7 +1362,7 @@ class GivenPressureBatchReactor_EnergyConservation(BatchReactors):
         if value < 0.0e0:
             print(
                 Color.PURPLE + "** heat transfer area must be >= 0",
-                end="\n" + Color.END,
+                end=Color.END,
             )
         else:
             self._heattransferarea = value
@@ -1349,7 +1380,7 @@ class GivenPressureBatchReactor_EnergyConservation(BatchReactors):
             print(
                 Color.PURPLE
                 + "** cannot specify heat transfer area of a fixed temperature batch reactor",
-                end="\n" + Color.END,
+                end=Color.END,
             )
             return 10
         else:
@@ -1368,7 +1399,7 @@ class GivenPressureBatchReactor_EnergyConservation(BatchReactors):
             print(
                 Color.PURPLE
                 + "** cannot specify heat loss rate of a fixed temperature batch reactor",
-                end="\n" + Color.END,
+                end=Color.END,
             )
             return 10
         else:
@@ -1379,7 +1410,7 @@ class GivenPressureBatchReactor_EnergyConservation(BatchReactors):
 
 class GivenVolumeBatchReactor_FixedTemperature(BatchReactors):
     """
-    Chemkin 0D transient closed homogeneous reactor model
+    Chemkin 0-D transient closed homogeneous reactor model
     with given reactor volume (CONV) and reactor temperature (TGIV)
     """
 
@@ -1395,6 +1426,7 @@ class GivenVolumeBatchReactor_FixedTemperature(BatchReactors):
         self._problemtype = c_int(self.ProblemTypes.get("CONV"))
         self._energytype = c_int(self.EnergyTypes.get("GivenT"))
         # defaults for all closed homogeneous reactor models
+        self._nreactors = 1
         self._npsrs = c_int(1)
         self._ninlets = c_int(0)
         self._nzones = c_int(0)
@@ -1427,7 +1459,8 @@ class GivenVolumeBatchReactor_FixedTemperature(BatchReactors):
             print(
                 Color.RED + f"** error initializing the reactor model: {self.label:s}"
             )
-            print(f"   error code = {iErr:d}", end="\n" + Color.END)
+            print(f"   error code = {iErr:d}", end=Color.END)
+            exit()
         # if full-keyword mode is turned ON
         if not Keyword.noFullKeyword:
             # populate the reactor setup keywords
@@ -1450,7 +1483,7 @@ class GivenVolumeBatchReactor_FixedTemperature(BatchReactors):
         if value <= 0.0e0:
             print(
                 Color.PURPLE + "** simulation end time must be > 0",
-                end="\n" + Color.END,
+                end=Color.END,
             )
         else:
             self._inputcheck.append("TIME")
@@ -1470,12 +1503,12 @@ class GivenVolumeBatchReactor_FixedTemperature(BatchReactors):
 
 class GivenVolumeBatchReactor_EnergyConservation(BatchReactors):
     """
-    Chemkin 0D transient closed homogeneous reactor model
+    Chemkin 0-D transient closed homogeneous reactor model
     with given reactor volume (CONV) and
     solving the energy equation (ENRG)
     """
 
-    def __init__(self, reactor_condition, label=""):
+    def __init__(self, reactor_condition, label=None):
         # set default label
         if label is None:
             label = "CONV"
@@ -1487,6 +1520,7 @@ class GivenVolumeBatchReactor_EnergyConservation(BatchReactors):
         self._problemtype = c_int(self.ProblemTypes.get("CONV"))
         self._energytype = c_int(self.EnergyTypes.get("ENERGY"))
         # defaults for all closed homogeneous reactor models
+        self._nreactors = 1
         self._npsrs = c_int(1)
         self._ninlets = c_int(0)
         self._nzones = c_int(0)
@@ -1522,7 +1556,8 @@ class GivenVolumeBatchReactor_EnergyConservation(BatchReactors):
             print(
                 Color.RED + f"** error initializing the reactor model: {self.label:s}"
             )
-            print(f"   error code = {iErr:d}", end="\n" + Color.END)
+            print(f"   error code = {iErr:d}", end=Color.END)
+            exit()
         # if full-keyword mode is turned ON
         if not Keyword.noFullKeyword:
             # populate the reactor setup keywords
@@ -1545,7 +1580,7 @@ class GivenVolumeBatchReactor_EnergyConservation(BatchReactors):
         if value <= 0.0e0:
             print(
                 Color.PURPLE + "** simulation end time must be > 0",
-                end="\n" + Color.END,
+                end=Color.END,
             )
         else:
             self._inputcheck.append("TIME")
@@ -1588,7 +1623,7 @@ class GivenVolumeBatchReactor_EnergyConservation(BatchReactors):
         if value < 0.0e0:
             print(
                 Color.PURPLE + "** simulation end time must be >= 0",
-                end="\n" + Color.END,
+                end=Color.END,
             )
         else:
             self._heattransfercoefficient = value
@@ -1613,7 +1648,7 @@ class GivenVolumeBatchReactor_EnergyConservation(BatchReactors):
         if value <= 0.0e0:
             print(
                 Color.PURPLE + "** ambient temperature must be > 0",
-                end="\n" + Color.END,
+                end=Color.END,
             )
         else:
             self._ambienttemperature = value
@@ -1638,7 +1673,7 @@ class GivenVolumeBatchReactor_EnergyConservation(BatchReactors):
         if value < 0.0e0:
             print(
                 Color.PURPLE + "** heat transfer area must be >= 0",
-                end="\n" + Color.END,
+                end=Color.END,
             )
         else:
             self._heattransferarea = value
@@ -1656,7 +1691,7 @@ class GivenVolumeBatchReactor_EnergyConservation(BatchReactors):
             print(
                 Color.PURPLE
                 + "** cannot specify heat transfer area of a fixed temperature batch reactor",
-                end="\n" + Color.END,
+                end=Color.END,
             )
             return 10
         else:
@@ -1675,7 +1710,7 @@ class GivenVolumeBatchReactor_EnergyConservation(BatchReactors):
             print(
                 Color.PURPLE
                 + "** cannot specify heat loss rate of a fixed temperature batch reactor",
-                end="\n" + Color.END,
+                end=Color.END,
             )
             return 10
         else:
