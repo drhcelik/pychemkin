@@ -223,7 +223,7 @@ id2 = MyGasMech.get_specindex(plotspeclist[1])
 c = diffcoef[id1][id2]
 print(
     f"Diffusion coefficient for {plotspeclist[0]}"
-    "against {plotspeclist[1]} is {c:e} [cm²/sec]."
+    f"against {plotspeclist[1]} is {c:e} [cm²/sec]."
 )
 
 # plot results
